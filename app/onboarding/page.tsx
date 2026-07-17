@@ -9,7 +9,7 @@ import { eachMinuteOfInterval, eachMonthOfInterval } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { DEFAULT_THEME_COLOR, getThemeCssVars, type ThemeColorKey } from '@/lib/theme'
 import { ThemeSwatchPicker } from '@/app/components/ThemeSwatchPicker'
-
+import Image from 'next/image'
 
 function SlugInput({ name }: { name: string }) {
   const [value, setValue] = useState('')
@@ -298,12 +298,9 @@ return (
   <div className="blocs-theme blocs-page" style={getThemeCssVars(themeColor)}>
     <div className="blocs-brand">
       <div className="blocs-brand-row">
-        <div className="blocs-brand-mark">
-          <span /><span className="active" /><span /><span />
-        </div>
-        <span className="blocs-brand-name">Blocs</span>
+      <Image src="/blocs-logo.svg" alt="Blocs" width={100} height={100} />
       </div>
-      <p className="blocs-brand-tagline">Book by the block.</p>
+      <p className="blocs-brand-tagline">The Schedule that Works For You.</p>
     </div>
 
     <div className="blocs-card blocs-form-shell" style={{ padding: '32px 24px' }}>

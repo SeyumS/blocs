@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import Image from 'next/image';
 
   export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -24,12 +25,9 @@ import { supabase } from '@/lib/supabase';
     <div className="blocs-theme blocs-page" style={{ justifyContent: 'center' }}>
       <div className="blocs-brand">
         <div className="blocs-brand-row">
-          <div className="blocs-brand-mark">
-            <span /><span className="active" /><span /><span />
-          </div>
-          <span className="blocs-brand-name">Blocs</span>
+          <Image src="/blocs-logo.svg" alt="Blocs" width={100} height={100} />
         </div>
-        <p className="blocs-brand-tagline">Book by the block.</p>
+        <p className="blocs-brand-tagline">The Schedule that Works for You.</p>
       </div>
 
       <div className="blocs-card" style={{ padding: '32px 24px' }}>

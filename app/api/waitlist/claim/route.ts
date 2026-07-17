@@ -88,7 +88,7 @@ export async function POST(req: Request) {
     }
 
     await resend.emails.send({
-      from: 'noreply@blocsmanaged.com',
+      from: 'noreply@blocsbooking.com',
       to: client.email,
       subject: 'Congratulations! You claimed the slot!',
       html: `

@@ -92,7 +92,7 @@ export async function POST(req: Request) {
 
       if (client?.email) {
         await resend.emails.send({
-          from: 'noreply@blocsmanaged.com',
+          from: 'noreply@blocsbooking.com',
           to: client.email,
           subject: 'A slot just opened up!',
           html: `

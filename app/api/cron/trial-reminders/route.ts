@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   await Promise.all(
     trainers.map(async (trainer) => {
       await resend.emails.send({
-        from: 'noreply@blocks.managed.com',
+        from: 'noreply@blocksbooking.com',
         to: trainer.email,
         subject: 'Your trial ends in 5 days',
         html: `
