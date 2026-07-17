@@ -1,0 +1,609 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Blocs design import — dark theme used by onboarding, dashboard,        */
+/* booking page and confirmation screens. Scoped to `.blocs-theme` so it  */
+/* doesn't affect the rest of the app (account, block-time, login, etc).  */
+/* ---------------------------------------------------------------------- */
+
+.blocs-theme {
+  --blocs-bg: #050608;
+  --blocs-panel: #0d0f13;
+  --blocs-panel-alt: #0a0c10;
+  --blocs-input-bg: #14171d;
+  --blocs-border: rgba(255, 255, 255, 0.08);
+  --blocs-border-soft: rgba(255, 255, 255, 0.1);
+  --blocs-border-faint: rgba(255, 255, 255, 0.06);
+  --blocs-text: #f5f7fa;
+  --blocs-text-60: rgba(245, 247, 250, 0.6);
+  --blocs-text-50: rgba(245, 247, 250, 0.5);
+  --blocs-text-45: rgba(245, 247, 250, 0.45);
+  --blocs-text-40: rgba(245, 247, 250, 0.4);
+  --blocs-text-35: rgba(245, 247, 250, 0.35);
+  --blocs-text-30: rgba(245, 247, 250, 0.3);
+  --blocs-accent: #3aa0ff;
+  --blocs-accent-dark: #1e6bff;
+  --blocs-accent-bright: #7fd8ff;
+  --blocs-accent-text: #04121f;
+  --blocs-accent-rgb: 58, 160, 255;
+  --blocs-danger-bg: rgba(255, 80, 80, 0.12);
+  --blocs-danger-border: rgba(255, 80, 80, 0.35);
+  --blocs-danger-text: #ff8f8f;
+
+  font-family: var(--font-space-grotesk), sans-serif;
+  background: var(--blocs-bg);
+  color: var(--blocs-text);
+}
+
+.blocs-theme a {
+  color: var(--blocs-accent);
+  text-decoration: none;
+}
+.blocs-theme a:hover {
+  color: var(--blocs-accent-bright);
+}
+.blocs-theme input,
+.blocs-theme select {
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+.blocs-page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 56px 20px 80px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.blocs-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 40px;
+}
+.blocs-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.blocs-brand-mark {
+  display: grid;
+  grid-template-columns: 7px 7px;
+  grid-template-rows: 7px 7px;
+  gap: 3px;
+}
+.blocs-brand-mark span {
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.16);
+}
+.blocs-brand-mark span.active {
+  background: var(--blocs-accent);
+  box-shadow: 0 0 8px rgba(58, 160, 255, 0.9);
+}
+.blocs-brand-name {
+  color: var(--blocs-text);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.blocs-brand-tagline {
+  margin: 0;
+  color: var(--blocs-text-40);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.blocs-card {
+  width: 100%;
+  max-width: 390px;
+  background: var(--blocs-panel);
+  border-radius: 32px;
+  border: 1px solid var(--blocs-border);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.blocs-label {
+  color: var(--blocs-text-60);
+  opacity: 0.9;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.blocs-input,
+.blocs-select {
+  background: var(--blocs-input-bg);
+  border: 1px solid var(--blocs-border-soft);
+  border-radius: 12px;
+  padding: 13px 14px;
+  color: var(--blocs-text);
+  font-size: 15px;
+  outline: none;
+}
+.blocs-input::placeholder {
+  color: var(--blocs-text-35);
+}
+.blocs-input:focus,
+.blocs-select:focus {
+  border-color: var(--blocs-accent);
+}
+
+.blocs-btn-primary {
+  background: linear-gradient(135deg, var(--blocs-accent), var(--blocs-accent-dark));
+  border: none;
+  border-radius: 12px;
+  padding: 15px;
+  color: var(--blocs-accent-text);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(var(--blocs-accent-rgb), 0.35),
+    0 8px 24px rgba(var(--blocs-accent-rgb), 0.35);
+}
+.blocs-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.blocs-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--blocs-border-soft);
+  border-radius: 12px;
+  padding: 13px;
+  color: var(--blocs-text-60);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.blocs-day-chip {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--blocs-text-50);
+  background: var(--blocs-input-bg);
+  border: 1px solid var(--blocs-border-soft);
+}
+.blocs-day-chip.active {
+  color: var(--blocs-accent-text);
+  background: linear-gradient(135deg, var(--blocs-accent), var(--blocs-accent-dark));
+  border-color: transparent;
+}
+
+.blocs-week-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--blocs-panel-alt);
+  border: 1px solid var(--blocs-border-faint);
+  border-radius: 14px;
+  padding: 14px;
+}
+.blocs-week-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.blocs-week-preview-block {
+  height: 16px;
+  flex: 1;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--blocs-accent), var(--blocs-accent-dark));
+  box-shadow: 0 0 6px rgba(var(--blocs-accent-rgb), 0.5);
+}
+
+.blocs-link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(var(--blocs-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--blocs-accent-rgb), 0.35);
+  border-radius: 12px;
+  padding: 13px 14px;
+}
+.blocs-link-card-text {
+  color: var(--blocs-accent-bright);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Day-tab navigation used on dashboard / booking daily view */
+.blocs-day-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  /* Horizontal padding so the first/last chip isn't clipped by the
+     scrollport or parent overflow when the row is wider than the screen. */
+  padding: 4px 2px;
+  /* Start from the left — justify-content: center + overflow-x clips
+     the left side and you can't scroll to it. */
+  justify-content: flex-start;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.blocs-day-tabs::-webkit-scrollbar {
+  display: none;
+}
+.blocs-day-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 44px;
+  padding: 8px 0;
+  border-radius: 12px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--blocs-border-faint);
+}
+.blocs-day-tab.active {
+  background: rgba(var(--blocs-accent-rgb), 0.14);
+  border-color: rgba(var(--blocs-accent-rgb), 0.4);
+}
+.blocs-day-tab-dow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--blocs-text-35);
+}
+.blocs-day-tab.active .blocs-day-tab-dow {
+  color: var(--blocs-accent-bright);
+}
+.blocs-day-tab-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--blocs-text-60);
+}
+.blocs-day-tab.active .blocs-day-tab-date {
+  color: var(--blocs-text);
+}
+
+/* Slot rows used on dashboard / booking daily view */
+.blocs-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.blocs-slot-time {
+  width: 84px;
+  color: var(--blocs-text-40);
+  font-size: 11.5px;
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.blocs-slot {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.blocs-slot--free {
+  background: transparent;
+  border: 1px dashed var(--blocs-border-soft);
+  color: var(--blocs-text-30);
+  cursor: default;
+}
+.blocs-slot--blocked {
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 6px, transparent 6px 12px);
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  color: var(--blocs-text-35);
+  cursor: default;
+}
+.blocs-slot--break {
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.015) 0 6px, transparent 6px 12px);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  color: var(--blocs-text-30);
+  cursor: default;
+}
+/* Bookable / free — accent border matching filled/active chips */
+.blocs-slot--open {
+  background: color-mix(in srgb, var(--blocs-accent) 8%, transparent);
+  border: 1px solid var(--blocs-accent);
+  color: var(--blocs-accent-bright);
+  cursor: default;
+}
+.blocs-slot--booked-out {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--blocs-text-30);
+  cursor: default;
+}
+.blocs-slot--filled {
+  background: linear-gradient(135deg, var(--blocs-accent), var(--blocs-accent-dark));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--blocs-accent) 40%, transparent),
+    0 0 18px color-mix(in srgb, var(--blocs-accent) 35%, transparent);
+  color: var(--blocs-accent-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.blocs-slot-actions {
+  margin-left: 94px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.blocs-slot-action-danger {
+  background: var(--blocs-danger-bg);
+  border: 1px solid var(--blocs-danger-border);
+  color: var(--blocs-danger-text);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.blocs-slot-action-neutral {
+  background: transparent;
+  border: 1px solid var(--blocs-border-soft);
+  color: var(--blocs-text-60);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.blocs-confirm-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--blocs-panel-alt);
+  border: 1px solid rgba(var(--blocs-accent-rgb), 0.3);
+  border-radius: 14px;
+}
+.blocs-confirm-panel-title {
+  color: var(--blocs-accent-bright);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.blocs-check-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(var(--blocs-accent-rgb), 0.12);
+  border: 1px solid rgba(var(--blocs-accent-rgb), 0.4);
+  box-shadow: 0 0 30px rgba(var(--blocs-accent-rgb), 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.blocs-check-mark {
+  width: 22px;
+  height: 12px;
+  border-left: 3px solid var(--blocs-accent-bright);
+  border-bottom: 3px solid var(--blocs-accent-bright);
+  transform: rotate(-45deg) translate(2px, -2px);
+}
+
+.blocs-summary-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--blocs-panel-alt);
+  border: 1px solid var(--blocs-border);
+  border-radius: 16px;
+  padding: 18px;
+}
+.blocs-summary-row {
+  display: flex;
+  justify-content: space-between;
+}
+.blocs-summary-key {
+  color: var(--blocs-text-45);
+  font-size: 12.5px;
+}
+.blocs-summary-value {
+  color: var(--blocs-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.blocs-error {
+  color: var(--blocs-danger-text);
+  font-size: 13px;
+}
+
+/* Waitlist tap modal + success toast (booking page) */
+.blocs-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 900;
+}
+
+@keyframes blocs-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.blocs-modal-panel {
+  animation: blocs-modal-in 0.18s ease-out;
+}
+
+.blocs-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translate(-50%, -12px);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--blocs-panel);
+  border: 1px solid rgba(var(--blocs-accent-rgb), 0.35);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  border-radius: 999px;
+  padding: 12px 20px;
+  color: var(--blocs-text);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.blocs-toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.blocs-toast-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(var(--blocs-accent-rgb), 0.15);
+  border: 1px solid rgba(var(--blocs-accent-rgb), 0.4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.blocs-toast-check::after {
+  content: '';
+  width: 7px;
+  height: 4px;
+  border-left: 2px solid var(--blocs-accent-bright);
+  border-bottom: 2px solid var(--blocs-accent-bright);
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+
+/* Desktop weekly grid (dashboard + booking page) */
+.blocs-grid-wrap {
+  width: 100%;
+  background: var(--blocs-panel);
+  border: 1px solid var(--blocs-border);
+  border-radius: 20px;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+.blocs-grid-table {
+  border-collapse: separate;
+  border-spacing: 6px;
+  width: 100%;
+}
+.blocs-grid-head {
+  color: var(--blocs-text-45);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 10px 10px;
+  white-space: nowrap;
+  text-align: center;
+  border-bottom: 1px solid var(--blocs-border-faint);
+}
+.blocs-grid-time {
+  color: var(--blocs-text-40);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 0 10px 0 4px;
+  text-align: right;
+}
+.blocs-grid-cell {
+  padding: 3px;
+  text-align: center;
+  vertical-align: middle;
+  min-width: 116px;
+}
+
+.blocs-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Onboarding / account settings form — a single narrow card on mobile,
+   a wider two-column layout (fields + live schedule preview) on desktop. */
+.blocs-form-shell {
+  width: 100%;
+  max-width: 420px;
+}
+@media (min-width: 768px) {
+  .blocs-form-shell {
+    max-width: 980px;
+  }
+}
+
+.blocs-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+@media (min-width: 768px) {
+  .blocs-form-grid {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .blocs-form-main {
+    flex: 1 1 380px;
+    min-width: 0;
+  }
+  .blocs-form-aside {
+    flex: 1 1 460px;
+    min-width: 0;
+    position: sticky;
+    top: 24px;
+  }
+}

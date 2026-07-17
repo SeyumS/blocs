@@ -1,0 +1,52 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+export async function POST(req: Request){
+  const { email, phone, trainerId, start } = await req.json();
+  console.log(start);
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY! // never expose this to the client
+  );
+  let client = null;
+  if(email){
+  const { data: clientData, error: clientError } = await supabaseAdmin.from('clients').select('*').eq('trainer_id', trainerId).eq('email', email).maybeSingle();
+  if(clientError){
+    return NextResponse.json({ error: clientError.message }, { status: 500 });
+  }
+  if(clientData){
+  client = clientData;
+  }
+  } else if(phone){
+    const { data: clientData, error: clientError } = await supabaseAdmin.from('clients').select('*').eq('trainer_id', trainerId).eq('phone', phone).maybeSingle();
+    if(clientError){
+      console.log(clientError);
+      return NextResponse.json({ error: 'Client already exists' }, { status: 400 });
+    }
+    if(clientData){
+    client = clientData;
+    }
+  } 
+  let notInDataBase = false;
+  if(!client){
+    const { data: clientData, error: clientError } = (await supabaseAdmin.from('clients').insert({ trainer_id: trainerId, email: email, phone: phone, name: "anonymous Client"}).select('*').single());
+    if(clientError){
+      console.log(clientError);
+      return NextResponse.json({ error: clientError.message }, { status: 500 });
+    }
+    if(clientData){
+      notInDataBase = true;
+    client = clientData;
+    }
+  }
+  const { data: waitListEntry, error: waitListEntryError } = await supabaseAdmin.from('weightlist_entries').select('*').eq('client_id', client.id).eq('trainer_id', trainerId).eq('desired_starts_at', new Date(start)).maybeSingle();
+  if(waitListEntry){
+    return NextResponse.json({ error: 'You arealready in the waiting list' }, { status: 400 });
+  }
+  const { data: waitingListData, error: waitingListError } = await supabaseAdmin.from('waitlist_entries').insert({ client_id: client.id, trainer_id: trainerId, desired_starts_at: new Date(start) }).select();
+  if(waitingListError){
+    console.log(waitingListError);
+    return NextResponse.json({ error: waitingListError.message }, { status: 500 });
+  }
+  return NextResponse.json({ success: true, inDataBase: notInDataBase, client: client },{status: 200});
+}
