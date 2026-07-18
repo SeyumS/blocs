@@ -14,42 +14,54 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { trainerId, startsAt, endsAt, isRecurring, client } = body;
 
-  if (!trainerId || !startsAt || !endsAt || !client?.name) {
+  if (!trainerId || !startsAt || !endsAt) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
-  if (!client.email && !client.phone) {
+  if (!client?.email && !client?.phone) {
     return NextResponse.json({ error: 'Email or phone required' }, { status: 400 });
   }
 
+  // Name is optional at booking time — new clients get a placeholder and
+  // the UI asks for a real name in a follow-up step.
+  const clientName = (client?.name && String(client.name).trim()) || 'anonymous Client';
+
   // 1. Find or create the client record
   let clientId: string;
+  let isNew = false;
   if (client.email) {
     const { data: existing } = await supabaseAdmin
       .from('clients')
-      .select('id')
+      .select('id, name')
       .eq('trainer_id', trainerId)
       .eq('email', client.email)
       .maybeSingle();
-
+       
     if (existing) {
       clientId = existing.id;
+      // Returning clients with only a placeholder still need the name step.
+      isNew =
+        !existing.name ||
+        existing.name === 'anonymous Client' ||
+        existing.name.toLowerCase() === 'anonymous client';
     } else {
       const { data: newClient, error } = await supabaseAdmin
         .from('clients')
-        .insert({ trainer_id: trainerId, name: client.name, email: client.email, phone: client.phone })
+        .insert({ trainer_id: trainerId, name: clientName, email: client.email, phone: client.phone })
         .select('id')
         .single();
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       clientId = newClient.id;
+      isNew = true;
     }
   } else {
     const { data: newClient, error } = await supabaseAdmin
       .from('clients')
-      .insert({ trainer_id: trainerId, name: client.name, phone: client.phone })
+      .insert({ trainer_id: trainerId, name: clientName, phone: client.phone })
       .select('id')
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     clientId = newClient.id;
+    isNew = true;
   }
 
   // 2. If recurring, create the series first
@@ -102,11 +114,11 @@ export async function POST(req: Request) {
       subject: 'Your booking is confirmed',
       html: `
         <h1>Booking confirmed</h1>
-        <p>Hi ${client.name},</p>
+        <p>Hi ${clientName},</p>
         <p>Your session is confirmed.</p>
         <p><strong>Start:</strong> ${new Date(startsAt).toLocaleString()}</p>
         <p><strong>End:</strong> ${new Date(endsAt).toLocaleString()}</p>
-        <p>if you want to candel or reschedule, follow the link below:</p>
+        <p>if you want to cancel or reschedule, follow the link below:</p>
         <a href="http://localhost:3000/cancel/${booking.id}">
           Cancel or Reschedule
         </a>
@@ -114,5 +126,5 @@ export async function POST(req: Request) {
     });
   }
 
-  return NextResponse.json({ booking }, { status: 201 });
+  return NextResponse.json({ booking, isNew, clientId }, { status: 201 });
 }

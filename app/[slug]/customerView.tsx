@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { format, set } from 'date-fns';
+import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 import type { CalendarSlot } from '@/lib/scheduling';
 import { getThemeCssVars } from '@/lib/theme';
 
@@ -19,14 +20,24 @@ interface Props {
   slots: CalendarSlot[]; // pre-computed server-side, grouped-ready
 }
 
+type UiStatus =
+  | 'idle'
+  | 'submitting'
+  | 'needs_name'
+  | 'booked'
+  | 'waitlisted'
+  | 'error'
+  | 'slot_taken';
+
 export default function CustomerView({ trainer, slots }: Props) {
+  const router = useRouter();
   const [selectedSlot, setSelectedSlot] = useState<CalendarSlot | null>(null);
   const [selectedWaitlistSlot, setSelectedWaitlistSlot] = useState<CalendarSlot | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'submitting' | 'booked' | 'waitlisted' | 'error' | 'slot_taken'>('idle');
+  const [phone] = useState('');
+  const [status, setStatus] = useState<UiStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
   const [tappedWaitlistSlot, setTappedWaitlistSlot] = useState<boolean>(false);
@@ -53,6 +64,22 @@ export default function CustomerView({ trainer, slots }: Props) {
       clearTimeout(resetTimer);
     };
   }, [status]);
+
+  // On a successful booking, show the confirmation just long enough to read
+  // it, then return to the schedule. Refresh so the slot that was just
+  // booked shows as taken instead of the stale server-rendered snapshot.
+  useEffect(() => {
+    if (status !== 'booked') return;
+    const resetTimer = setTimeout(() => {
+      setStatus('idle');
+      setSelectedSlot(null);
+      setName('');
+      setEmail('');
+      setClientId(null);
+      router.refresh();
+    }, 5000);
+    return () => clearTimeout(resetTimer);
+  }, [status, router]);
 
   // Group slots by date for display
   const slotsByDate = slots.reduce<Record<string, CalendarSlot[]>>((acc, slot) => {
@@ -94,9 +121,10 @@ export default function CustomerView({ trainer, slots }: Props) {
   }
 
   const handleSubmit = async () => {
-    if (!selectedSlot || !name || (!email && !phone)) return;
+    if (!selectedSlot || !email.trim()) return;
 
     setStatus('submitting');
+    setErrorMsg('');
     try {
       const res = await fetch('/api/book', {
         method: 'POST',
@@ -106,7 +134,7 @@ export default function CustomerView({ trainer, slots }: Props) {
           startsAt: selectedSlot.start,
           endsAt: selectedSlot.end,
           isRecurring,
-          client: { name, email, phone },
+          client: { name: name.trim() || undefined, email: email.trim(), phone },
         }),
       });
 
@@ -122,12 +150,72 @@ export default function CustomerView({ trainer, slots }: Props) {
         return;
       }
 
-      setStatus('booked');
-    } catch (err) {
+      setClientId(data.clientId ?? data.booking?.client_id ?? null);
+
+      if (data.isNew) {
+        setName('');
+        setNameInfo(false);
+        setStatus('needs_name');
+      } else {
+        setStatus('booked');
+      }
+    } catch {
       setErrorMsg('Network error — please try again');
       setStatus('error');
     }
   };
+
+  const saveBookingName = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!clientId || !name.trim()) return;
+
+    setStatus('submitting');
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/save-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), clientId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error ?? 'Something went wrong');
+        setStatus('needs_name');
+        return;
+      }
+      setStatus('booked');
+    } catch {
+      setErrorMsg('Network error — please try again');
+      setStatus('needs_name');
+    }
+  };
+
+  if (status === 'needs_name') {
+    return (
+      <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainer.theme_color) }}>
+        <div className="blocs-confirm-panel blocs-modal-panel w-full" style={{ maxWidth: '480px' }}>
+          <span className="blocs-confirm-panel-title">What should I call you?</span>
+          <form onSubmit={saveBookingName} className="flex flex-col gap-2">
+            <input
+              className="blocs-input"
+              type="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setNameInfo(e.target.value.trim().length > 0);
+              }}
+              autoFocus
+            />
+            {errorMsg && <p className="blocs-error">{errorMsg}</p>}
+            <button type="submit" className="blocs-btn-primary" disabled={!nameInfo}>
+              Save
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (status === 'booked') {
     return (
@@ -179,14 +267,16 @@ export default function CustomerView({ trainer, slots }: Props) {
       }
       setClientId(data.client.id);
       setTappedWaitlistSlot(false);
-      setNotInDataBase(data.inDataBase);
-      // Use the freshly-fetched value, not the (stale) `notInDataBase` state
-      // from before this call — otherwise a brand-new client briefly shows
-      // "waitlisted" before the name modal has even opened.
-      if (!data.inDataBase) {
+      // API `inDataBase` means "was newly created / needs a name".
+      setNotInDataBase(!!data.inDataBase);
+      if (data.inDataBase) {
+        setName('');
+        setNameInfo(false);
+        setStatus('idle');
+      } else {
         setStatus('waitlisted');
       }
-    } catch (err) {
+    } catch {
       setErrorMsg('Network error — please try again');
       setStatus('error');
     }
@@ -194,12 +284,13 @@ export default function CustomerView({ trainer, slots }: Props) {
 
   const saveName = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!clientId || !name.trim()) return;
     setStatus('submitting');
     try {
       const res = await fetch('/api/save-name', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name, clientId: clientId }),
+        body: JSON.stringify({ name: name.trim(), clientId }),
       });
       if (!res.ok) {
         setErrorMsg('Something went wrong');
@@ -208,7 +299,7 @@ export default function CustomerView({ trainer, slots }: Props) {
       }
       setNotInDataBase(false);
       setStatus('waitlisted');
-    } catch (err) {
+    } catch {
       setErrorMsg('Network error — please try again');
       setStatus('error');
     }
@@ -365,7 +456,7 @@ export default function CustomerView({ trainer, slots }: Props) {
               Confirm {format(new Date(selectedSlot.start), 'EEE, MMM d')} · {format(new Date(selectedSlot.start), 'HH:mm')} · {trainer.session_length_minutes}-min
             </span>
 
-            <label className="flex items-center gap-2" style={{ color: 'var(--blocs-text-60)', fontSize: '13px' }}>
+            <label className="flex items-center gap-2" style={{ color: 'var(--blocs-text-60)', fontSize: '13px', accentColor: 'var(--blocs-accent)' }}>
               <input
                 type="checkbox"
                 checked={isRecurring}
@@ -374,13 +465,13 @@ export default function CustomerView({ trainer, slots }: Props) {
               Make this a weekly recurring slot
             </label>
 
-            <input
+            {/*<input
               className="blocs-input"
               placeholder="Your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-            />
+            />*/}
             <input
               className="blocs-input"
               placeholder="Email"
@@ -388,19 +479,23 @@ export default function CustomerView({ trainer, slots }: Props) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <input
+            {/*<input
               className="blocs-input"
               placeholder="Phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-            />
+            />*/}
 
             {status === 'slot_taken' && (
               <p className="blocs-error">Sorry, someone just booked this slot. Please pick another time.</p>
             )}
             {status === 'error' && <p className="blocs-error">{errorMsg}</p>}
 
-            <button className="blocs-btn-primary" onClick={handleSubmit} disabled={status === 'submitting'}>
+            <button
+              className="blocs-btn-primary"
+              onClick={handleSubmit}
+              disabled={status === 'submitting' || !email.trim()}
+            >
               {status === 'submitting' ? 'Booking...' : 'Confirm booking'}
             </button>
           </div>
@@ -421,7 +516,7 @@ export default function CustomerView({ trainer, slots }: Props) {
             <p style={{ margin: 0, color: 'var(--blocs-text-50)', fontSize: '12.5px' }}>I want to be notified via</p>
             <form onSubmit={getIntoWaitingList} className="flex flex-col gap-2">
               <input className="blocs-input" type="email" placeholder="Email" value={email} onChange={(e) =>{ setEmail(e.target.value); if(e.target.value.length > 0) { setWaitlistInfo(true) } else { setWaitlistInfo(false) }}} />
-              <input className="blocs-input" type="tel" placeholder="Phone" value={phone} onChange={(e) =>{ setPhone(e.target.value); if(e.target.value.length > 0) { setWaitlistInfo(true) } else { setWaitlistInfo(false) }}} />
+              {/*<input className="blocs-input" type="tel" placeholder="Phone" value={phone} onChange={(e) =>{ setPhone(e.target.value); if(e.target.value.length > 0) { setWaitlistInfo(true) } else { setWaitlistInfo(false) }}} />*/}
               <button type="submit" className="blocs-btn-primary" disabled={status === 'submitting' || !waitlistInfo}>get into waiting list</button>
             </form>
           </div>
@@ -438,9 +533,20 @@ export default function CustomerView({ trainer, slots }: Props) {
           <div className="blocs-confirm-panel blocs-modal-panel w-full" style={{ maxWidth: '480px' }}>
             <span className="blocs-confirm-panel-title">What should I call you?</span>
             <form onSubmit={saveName} className="flex flex-col gap-2">
-              <input className="blocs-input" type="text" placeholder="Name" value={name} onChange={(e) =>{ setName(e.target.value); setStatus('idle'); if(e.target.value.length > 0) { setNameInfo(true) } else { setNameInfo(false) }}} />
+              <input
+                className="blocs-input"
+                type="text"
+                placeholder="Name"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setNameInfo(e.target.value.trim().length > 0);
+                }}
+              />
               {status === 'error' && <p className="blocs-error">{errorMsg}</p>}
-              <button type="submit" className="blocs-btn-primary" disabled={status === 'submitting' || !nameInfo}>save</button>
+              <button type="submit" className="blocs-btn-primary" disabled={status === 'submitting' || !nameInfo}>
+                Save
+              </button>
             </form>
           </div>
         </div>

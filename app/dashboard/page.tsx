@@ -3,7 +3,12 @@ import { createClient } from '@/lib/supabase/server';
 import { computeCalendarSlots, type CalendarSlot } from '@/lib/scheduling';
 import TrainerDashboardView from './TrainerDashboardView';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }>;
+}) {
+  const { welcome } = await searchParams;
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -53,5 +58,5 @@ export default async function DashboardPage() {
     daysAhead: 56,
   });
 
-  return <TrainerDashboardView trainer={trainer} slots={slots} />;
+  return <TrainerDashboardView trainer={trainer} slots={slots} welcome={welcome === 'true'} />;
 }

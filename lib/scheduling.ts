@@ -40,6 +40,60 @@ export interface CalendarSlot {
   };
 }
 
+export const DAY_TO_INT: { [key: string]: number } = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(mins: number): string {
+  const h = String(Math.floor(mins / 60)).padStart(2, '0');
+  const m = String(mins % 60).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+/**
+ * Takes the Set of selected cellIds (e.g. "Mon-06:00") from the schedule
+ * grid and returns merged availability_rules rows ready for Supabase.
+ */
+export function extractAvailabilityRules(selectedCells: string[], slotDurationMinutes = 30) {
+  // Group selected times by day
+  const byDay: { [key: string]: number[] } = {};
+  for (const cellId of selectedCells) {
+    const [day, time] = cellId.split('-');
+    if (!byDay[day]) byDay[day] = [];
+    byDay[day].push(timeToMinutes(time));
+  }
+
+  const rules = [];
+
+  for (const [day, minutesList] of Object.entries(byDay)) {
+    const sorted = [...minutesList].sort((a, b) => a - b);
+
+    let rangeStart = sorted[0];
+    let prev = sorted[0];
+
+    for (let i = 1; i <= sorted.length; i++) {
+      const current = sorted[i];
+      const isContiguous = current === prev + slotDurationMinutes;
+
+      if (!isContiguous) {
+        // close out the current range
+        rules.push({
+          day_of_week: DAY_TO_INT[day],
+          start_time: minutesToTime(rangeStart),
+          end_time: minutesToTime(prev + slotDurationMinutes), // end = last slot's end
+        });
+        rangeStart = current;
+      }
+      prev = current;
+    }
+  }
+
+  return rules;
+}
+
 export function parseTimeOnDate(dateStr: string, timeStr: string, timezone: string): Date {
   const naive = parse(`${dateStr} ${timeStr}`, 'yyyy-MM-dd HH:mm:ss', new Date());
   return fromZonedTime(naive, timezone); // converts trainer's local time -> UTC

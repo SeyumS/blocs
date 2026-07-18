@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { generateTimeSlots } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -211,29 +211,71 @@ function extractAvailabilityRules(selectedCells: string[], slotDurationMinutes =
   return rules
 }
 
-function SlugInput({ name, trainer }: { name: string; trainer: string }) {
-  const [value, setValue] = useState(trainer)
+type SlugStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'
+
+function SlugInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  // Only the *result* of the last completed check is state — "checking" for
+  // the current value is derived below, so no setState runs synchronously
+  // in the effect body (every update happens inside the debounced callback).
+  const [checkedSlug, setCheckedSlug] = useState<string | null>(null)
+  const [checkedStatus, setCheckedStatus] = useState<'available' | 'taken' | 'invalid' | 'error'>('invalid')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!value) return
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/check-slug', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug: value }),
+        })
+        if (res.status === 400) {
+          setCheckedStatus('invalid')
+        } else {
+          const data = await res.json()
+          setCheckedStatus(data.available ? 'available' : 'taken')
+        }
+      } catch {
+        setCheckedStatus('error')
+      }
+      setCheckedSlug(value)
+    }, 400)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [value])
+
+  const status: SlugStatus = !value ? 'idle' : checkedSlug !== value ? 'checking' : checkedStatus
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const next = e.target.value
-    if (!next.includes('/')) {
-      setValue(next)
-    }
+    const next = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+    onChange(next)
   }
 
   return (
-    <div className="flex items-center gap-2 blocs-input" style={{ padding: '13px 14px' }}>
-      <span style={{ color: 'var(--blocs-text-40)', fontSize: '15px' }}>blocs.app/</span>
-      <input
-        type="text"
-        name={name}
-        value={value}
-        onChange={handleChange}
-        style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--blocs-accent)', fontSize: '15px', fontWeight: 600, flex: 1 }}
-      />
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2 blocs-input" style={{ padding: '13px 14px' }}>
+        <span style={{ color: 'var(--blocs-text-40)', fontSize: '15px' }}>blocsbooking/</span>
+        <input
+          type="text"
+          value={value}
+          onChange={handleChange}
+          style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--blocs-accent)', fontSize: '15px', fontWeight: 600, flex: 1 }}
+        />
+      </div>
+      {status === 'checking' && <span style={{ fontSize: '12px', color: 'var(--blocs-text-40)' }}>Checking availability…</span>}
+      {status === 'available' && <span style={{ fontSize: '12px', color: 'var(--blocs-accent-bright)' }}>Available</span>}
+      {status === 'taken' && <span className="blocs-error">That link is already taken</span>}
+      {status === 'invalid' && <span className="blocs-error">Use lowercase letters, numbers, and hyphens</span>}
+      {status === 'error' && <span className="blocs-error">Couldn&apos;t check availability — try again</span>}
     </div>
   )
 }
+
 
 export const AccountView = ({
   trainer,
@@ -284,6 +326,9 @@ export const AccountView = ({
   const [isDragging, setIsDragging] = useState(false)
   const [dragMode, setDragMode] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
+  const [slug, setSlug] = useState(trainer.slug ?? '')
+
+  
 
   const toggleCell = (cellId: string, forceMode?: boolean) => {
     setSelected(prev => {
@@ -506,7 +551,7 @@ export const AccountView = ({
 
             <div className="flex flex-col gap-1.5">
               <label className="blocs-label">Your booking link</label>
-              <SlugInput name="personalLink" trainer={trainer.slug ?? ''} />
+              <SlugInput value={slug} onChange={setSlug} />
             </div>
 
             <div className="flex flex-col gap-1.5">

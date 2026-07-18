@@ -19,12 +19,14 @@ interface Props {
     theme_color?: string | null;
   };
   slots: CalendarSlot[];
+  welcome?: boolean;
 }
 
 type PendingAction = { bookingId: string; kind: 'single' | 'series' } | null;
 
-export default function TrainerDashboardView({ trainer, slots }: Props) {
+export default function TrainerDashboardView({ trainer, slots, welcome }: Props) {
   const router = useRouter();
+  const [showWelcome, setShowWelcome] = useState(!!welcome);
   const [weekOffset, setWeekOffset] = useState(0);
   const [pending, setPending] = useState<PendingAction>(null);
   const [busyBookingId, setBusyBookingId] = useState<string | null>(null);
@@ -111,6 +113,15 @@ export default function TrainerDashboardView({ trainer, slots }: Props) {
 
   return (
     <div className="mx-auto blocs-theme flex flex-col gap-4 p-6 min-h-screen w-full box-border" style={getThemeCssVars(trainer.theme_color)}>
+      {showWelcome && (
+        <div className="blocs-confirm-panel" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="flex flex-col gap-0.5">
+            <span className="blocs-confirm-panel-title">You&apos;re all set, {trainer.name}</span>
+            <span style={{ color: 'var(--blocs-text-50)', fontSize: '12.5px' }}>Your schedule from the demo is live — start taking bookings.</span>
+          </div>
+          <button className="blocs-slot-action-neutral" onClick={() => setShowWelcome(false)}>Dismiss</button>
+        </div>
+      )}
       {/* Outer: places the column in the page (center on mobile, left on desktop). */}
       <div className="w-full flex justify-center md:justify-start">
         <div className="w-full max-w-xs md:max-w-md flex flex-col items-center md:items-start gap-2">
