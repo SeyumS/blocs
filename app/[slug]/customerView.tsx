@@ -221,8 +221,8 @@ export default function CustomerView({ trainer, slots }: Props) {
     return (
       <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainer.theme_color) }}>
         <div className="blocs-card" style={{ alignItems: 'center', justifyContent: 'center', padding: '40px 32px', gap: '24px' }}>
-          <div className="blocs-check-circle">
-            <div className="blocs-check-mark" />
+          <div className="blocs-check-circle blocs-check-circle--celebrate">
+            <div className="blocs-check-mark blocs-check-mark--celebrate" />
           </div>
           <div className="flex flex-col gap-1.5" style={{ alignItems: 'center', textAlign: 'center' }}>
             <h1 style={{ margin: 0, color: 'var(--blocs-text)', fontSize: '22px', fontWeight: 700 }}>You&apos;re booked</h1>

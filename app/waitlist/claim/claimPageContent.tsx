@@ -29,8 +29,8 @@ export default function ClaimPage() {
     return (
       <div className="blocs-theme blocs-page" style={{ justifyContent: 'center' }}>
         <div className="blocs-card" style={{ alignItems: 'center', justifyContent: 'center', padding: '40px 32px', gap: '24px' }}>
-          <div className="blocs-check-circle">
-            <div className="blocs-check-mark" />
+          <div className="blocs-check-circle blocs-check-circle--celebrate">
+            <div className="blocs-check-mark blocs-check-mark--celebrate" />
           </div>
           <p style={{ margin: 0, color: 'var(--blocs-text)', fontSize: '15px', fontWeight: 600, textAlign: 'center' }}>
             You&apos;re booked! Check your email for confirmation.

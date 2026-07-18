@@ -185,7 +185,9 @@ export default function LandingPage() {
           />
         ) : (
           <div className="blocs-card" style={{ alignItems: 'center', justifyContent: 'center', padding: '40px 32px', gap: '24px' }}>
-            <div className="blocs-check-circle" style={{ margin: '0 auto' }} />
+            <div className="blocs-check-circle blocs-check-circle--celebrate" style={{ margin: '0 auto' }}>
+              <div className="blocs-check-mark blocs-check-mark--celebrate" />
+            </div>
             <div className="flex flex-col gap-1.5" style={{ alignItems: 'center', textAlign: 'center' }}>
               <h3 style={{ margin: 0, color: 'var(--blocs-text)', fontSize: '20px', fontWeight: 700 }}>Check your email</h3>
               <p style={{ margin: 0, color: 'var(--blocs-text-50)', fontSize: '13.5px' }}>
