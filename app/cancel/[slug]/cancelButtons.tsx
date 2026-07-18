@@ -25,7 +25,7 @@ export const CancelButtons = ({ data, slug }: CancelButtonsProps) => {
       // A full navigation (not router.push) so CustomerView actually
       // remounts — otherwise its `status` state (e.g. 'booked') survives
       // from before the cancellation via the Router Cache.
-      window.location.href = `/booklink/${slug}`;
+      window.location.href = `/${slug}`;
     }
   }
   const handleCancelSeries = async () => {
@@ -35,7 +35,7 @@ export const CancelButtons = ({ data, slug }: CancelButtonsProps) => {
       body: JSON.stringify({ id: data.id, mode: 'series', cancelledBy: 'client' }),
     });
     if (response.ok) {
-      window.location.href = `/booklink/${slug}`;
+      window.location.href = `/${slug}`;
     }
   }
   return (

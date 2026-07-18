@@ -21,16 +21,28 @@ export default function AddCardEarlyPage() {
   };
 
   return (
-    <div>
-      <h1>Add your card</h1>
-      <p>
-        Your trial is still active — adding your card now just makes sure nothing interrupts
-        your bookings when it ends. You won&apos;t be charged until your trial is over.
-      </p>
-      <button onClick={handleAddCard} disabled={status === 'loading'}>
-        {status === 'loading' ? 'Redirecting to checkout...' : 'Add card'}
-      </button>
-      {status === 'error' && <p>Something went wrong — please try again.</p>}
+    <div className="blocs-theme blocs-page" style={{ justifyContent: 'center' }}>
+      <div className="blocs-brand">
+        <div className="blocs-brand-row">
+          <div className="blocs-brand-mark">
+            <span /><span className="active" /><span /><span />
+          </div>
+          <span className="blocs-brand-name">Blocs</span>
+        </div>
+        <p className="blocs-brand-tagline">Book by the block.</p>
+      </div>
+
+      <div className="blocs-card flex flex-col gap-4" style={{ padding: '32px 24px' }}>
+        <h1 style={{ margin: 0, color: 'var(--blocs-text)', fontSize: '20px', fontWeight: 700 }}>Add your card</h1>
+        <p style={{ margin: 0, color: 'var(--blocs-text-50)', fontSize: '13.5px' }}>
+          Your trial is still active — adding your card now just makes sure nothing interrupts
+          your bookings when it ends. You won&apos;t be charged until your trial is over.
+        </p>
+        {status === 'error' && <p className="blocs-error">Something went wrong — please try again.</p>}
+        <button className="blocs-btn-primary" onClick={handleAddCard} disabled={status === 'loading'}>
+          {status === 'loading' ? 'Redirecting to checkout...' : 'Add card'}
+        </button>
+      </div>
     </div>
   );
 }

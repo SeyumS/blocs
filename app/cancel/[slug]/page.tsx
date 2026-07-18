@@ -1,4 +1,5 @@
 import React from 'react'
+import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CancelButtons } from './cancelButtons';
 import { getThemeCssVars } from '@/lib/theme';
@@ -9,7 +10,13 @@ const Cancel = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const { slug } = await params;
   const supabase = await createClient();
   const { data, error } = await supabase.from('bookings').select('*').eq('id', slug).single();
+  if (error || !data) {
+    notFound();
+  }
   const { data: trainerData, error: trainerError } = await supabase.from('trainers').select('*').eq('id', data.trainer_id).single();
+  if (trainerError || !trainerData) {
+    notFound();
+  }
 
 
   return (

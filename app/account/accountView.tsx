@@ -326,6 +326,7 @@ export const AccountView = ({
   const [isDragging, setIsDragging] = useState(false)
   const [dragMode, setDragMode] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [slug, setSlug] = useState(trainer.slug ?? '')
 
   
@@ -439,10 +440,7 @@ export const AccountView = ({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-
-    const formData = new FormData(e.target as HTMLFormElement)
-    const name = formData.get('name')
-    const personalLink = formData.get('personalLink')
+    setSaveError('')
 
     try {
       const { data, error } = await supabase.auth.getUser()
@@ -451,6 +449,7 @@ export const AccountView = ({
 
       if (error) {
         console.error(error)
+        setSaveError('Could not verify your session — please try again.')
         setIsLoading(false)
         return
       }
@@ -458,8 +457,8 @@ export const AccountView = ({
       const { data: trainerData, error: trainerError } = await supabase
         .from('trainers')
         .update({
-          name,
-          slug: personalLink,
+          name: trainerName,
+          slug,
           auth_user_id: authUserId,
           email,
           session_length_minutes: durationToMinutes(workHours),
@@ -475,6 +474,11 @@ export const AccountView = ({
 
       if (trainerError || !trainerData) {
         console.error(trainerError)
+        setSaveError(
+          trainerError?.code === '23505'
+            ? 'That booking link is already taken — please choose another.'
+            : 'Could not save your changes — please try again.'
+        )
         setIsLoading(false)
         return
       }
@@ -484,6 +488,7 @@ export const AccountView = ({
       router.push('/confirmation')
     } catch (error) {
       console.error(error)
+      setSaveError('Could not save your changes — please try again.')
       setIsLoading(false)
     }
   }
@@ -672,6 +677,8 @@ export const AccountView = ({
                 </div>
               </div>
             </div>
+
+            {saveError && <p className="blocs-error">{saveError}</p>}
 
             <button type="submit" className="blocs-btn-primary" disabled={isLoading} style={{ marginTop: '6px' }}>
               {isLoading ? 'Loading...' : 'Save changes'}

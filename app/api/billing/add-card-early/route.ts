@@ -48,10 +48,13 @@ export async function POST() {
 
   const trialEndUnix = Math.floor(new Date(trainer.trial_ends_at).getTime() / 1000);
   const nowUnix = Math.floor(Date.now() / 1000);
+  const TWO_DAYS_SECONDS = 2 * 24 * 60 * 60;
 
-  // Stripe requires trial_end to be in the future — if trial already passed, fall back to immediate billing
+  // Stripe requires trial_end to be at least 48 hours in the future — if the
+  // trial has already passed or is about to (within 2 days), fall back to
+  // immediate billing instead of passing a trial_end Stripe will reject.
   const subscriptionData =
-    trialEndUnix > nowUnix ? { trial_end: trialEndUnix } : undefined;
+    trialEndUnix > nowUnix + TWO_DAYS_SECONDS ? { trial_end: trialEndUnix } : undefined;
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,

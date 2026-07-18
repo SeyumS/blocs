@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { isTimeWithinAvailability } from '@/lib/scheduling';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 
 // Service role client — bypasses RLS, used only here on the server
 const supabaseAdmin = createClient(
@@ -19,6 +21,34 @@ export async function POST(req: Request) {
   }
   if (!client?.email && !client?.phone) {
     return NextResponse.json({ error: 'Email or phone required' }, { status: 400 });
+  }
+
+  // The UI only ever renders clickable slots that are already known-open —
+  // this is the actual server-side enforcement that a request can't book
+  // an arbitrary time outside the trainer's hours or during a blocked date.
+  const { data: trainer } = await supabaseAdmin
+    .from('trainers')
+    .select('timezone')
+    .eq('id', trainerId)
+    .single();
+  if (!trainer) {
+    return NextResponse.json({ error: 'Trainer not found' }, { status: 404 });
+  }
+
+  const [{ data: rules }, { data: exceptions }] = await Promise.all([
+    supabaseAdmin.from('availability_rules').select('day_of_week, start_time, end_time').eq('trainer_id', trainerId),
+    supabaseAdmin.from('availability_exceptions').select('date, is_blocked, start_time, end_time').eq('trainer_id', trainerId),
+  ]);
+
+  const isAvailable = isTimeWithinAvailability({
+    startsAt: new Date(startsAt),
+    endsAt: new Date(endsAt),
+    rules: rules ?? [],
+    exceptions: exceptions ?? [],
+    timezone: trainer.timezone || 'UTC',
+  });
+  if (!isAvailable) {
+    return NextResponse.json({ error: 'That time is not available' }, { status: 400 });
   }
 
   // Name is optional at booking time — new clients get a placeholder and
@@ -119,7 +149,7 @@ export async function POST(req: Request) {
         <p><strong>Start:</strong> ${new Date(startsAt).toLocaleString()}</p>
         <p><strong>End:</strong> ${new Date(endsAt).toLocaleString()}</p>
         <p>if you want to cancel or reschedule, follow the link below:</p>
-        <a href="http://localhost:3000/cancel/${booking.id}">
+        <a href="${APP_URL}/cancel/${booking.id}">
           Cancel or Reschedule
         </a>
       `,

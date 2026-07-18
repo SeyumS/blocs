@@ -1,5 +1,5 @@
 import { addDays, format, isBefore, isAfter, addMinutes, parse } from 'date-fns';
-import { fromZonedTime } from 'date-fns-tz';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 export interface AvailabilityRule {
   day_of_week: number;
@@ -101,6 +101,55 @@ export function parseTimeOnDate(dateStr: string, timeStr: string, timezone: stri
 
 export function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
   return isBefore(aStart, bEnd) && isAfter(aEnd, bStart);
+}
+
+/**
+ * Server-side guard for /api/book — checks a requested [startsAt, endsAt)
+ * window actually falls inside one of the trainer's availability_rules
+ * windows (not straddling a break) and isn't covered by a blocking
+ * exception. The customer-facing UI only ever lets people click slots that
+ * are already known-available, but nothing stops a direct API request with
+ * an arbitrary time, so this is the real enforcement point.
+ */
+export function isTimeWithinAvailability({
+  startsAt,
+  endsAt,
+  rules,
+  exceptions,
+  timezone,
+}: {
+  startsAt: Date;
+  endsAt: Date;
+  rules: AvailabilityRule[];
+  exceptions: Exception[];
+  timezone: string;
+}): boolean {
+  if (isBefore(startsAt, new Date())) return false;
+
+  const localDate = toZonedTime(startsAt, timezone);
+  const dateStr = format(localDate, 'yyyy-MM-dd');
+  const dayOfWeek = localDate.getDay();
+
+  const fitsARule = rules
+    .filter((r) => r.day_of_week === dayOfWeek)
+    .some((rule) => {
+      const windowStart = parseTimeOnDate(dateStr, rule.start_time, timezone);
+      const windowEnd = parseTimeOnDate(dateStr, rule.end_time, timezone);
+      return !isBefore(startsAt, windowStart) && !isAfter(endsAt, windowEnd);
+    });
+  if (!fitsARule) return false;
+
+  const isBlocked = exceptions.some((e) => {
+    if (e.date !== dateStr || !e.is_blocked) return false;
+    if (!e.start_time) return true; // full-day block
+    return overlaps(
+      startsAt, endsAt,
+      parseTimeOnDate(dateStr, e.start_time, timezone),
+      parseTimeOnDate(dateStr, e.end_time!, timezone)
+    );
+  });
+
+  return !isBlocked;
 }
 
 export function computeCalendarSlots({

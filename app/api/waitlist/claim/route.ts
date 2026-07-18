@@ -6,6 +6,7 @@ const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 
 export async function POST(req: Request) {
   const { token } = await req.json();
@@ -95,10 +96,10 @@ export async function POST(req: Request) {
         <h1>Booking confirmed</h1>
         <p>Hi ${client.name},</p>
         <p>Your session is confirmed.</p>
-        <p><strong>Start:</strong> ${new Date(newBooking.startsAt).toLocaleString()}</p>
+        <p><strong>Start:</strong> ${new Date(newBooking.starts_at).toLocaleString()}</p>
         <p><strong>End:</strong> ${new Date(endsAt).toLocaleString()}</p>
-        <p>if you want to candel or reschedule, follow the link below:</p>
-        <a href="http://localhost:3000/cancel/${newBooking.id}">
+        <p>if you want to cancel or reschedule, follow the link below:</p>
+        <a href="${APP_URL}/cancel/${newBooking.id}">
           Cancel or Reschedule
         </a>
       `,

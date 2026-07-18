@@ -8,6 +8,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 const resend = new Resend(process.env.RESEND_API_KEY);
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 
 export async function GET(req: Request) {
   // Protect this route — only your scheduler should be able to trigger it
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
   await Promise.all(
     trainers.map(async (trainer) => {
       await resend.emails.send({
-        from: 'noreply@blocksbooking.com',
+        from: 'noreply@blocsbooking.com',
         to: trainer.email,
         subject: 'Your trial ends in 5 days',
         html: `
@@ -41,7 +42,7 @@ export async function GET(req: Request) {
           <p>Your free trial ends on ${format(new Date(trainer.trial_ends_at), 'EEEE, MMM d')}.</p>
           <p>Add your card now so your booking page and dashboard keep running without interruption —
              you won't be charged until your trial actually ends.</p>
-          <p><a href="localhost:3000/billing/add-card-early">
+          <p><a href="${APP_URL}/billing/add-card-early">
             Add your card now
           </a></p>
         `,
