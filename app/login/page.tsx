@@ -91,11 +91,14 @@ if (step === 'code') {
         placeholder="123456"
         autoFocus
         required
+      className="blocs-input"
       />
   {status === 'error' && <p>{errorMsg}</p>}
 
-<button type="submit" disabled={status === 'loading' || code.length !== 6}>
+<button type="submit" disabled={status === 'loading' || code.length !== 6} className='blocs-btn-primary'
+  style={{ background: 'white', color: 'black', boxShadow: '0 0 0 1px rgba(#f5f7fa, 0.35), 0 8px 24px rgba(#f5f7fa, 0.35)'}}>
   {status === 'loading' ? 'Verifying...' : 'Verify & log in'}
+  
 </button>
 
 <button type="button" onClick={() => setStep('email')}>
@@ -130,7 +133,11 @@ if (step === 'code') {
                 className="blocs-input"
               />
             </div>
-            <button type="submit" className="blocs-btn-primary">Login</button>
+            <button type="submit"
+             disabled={status === 'loading'}
+            className="blocs-btn-primary"
+            style={{ background: 'white', color: 'black', boxShadow: '0 0 0 1px rgba(#f5f7fa, 0.35), 0 8px 24px rgba(#f5f7fa, 0.35)'}}
+            >send code</button>
           </form>
       </div>
     </div>

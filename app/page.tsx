@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_THEME_COLOR, getThemeCssVars, type ThemeColorKey } from '@/lib/theme'
@@ -39,14 +40,18 @@ const FAQS = [
   },
 ]
 
-type DemoStep = 'building' | 'sent'
+type DemoStep = 'building' | 'code'
 
 export default function LandingPage() {
+  const router = useRouter()
   const [pageAccent, setPageAccent] = useState<ThemeColorKey>(DEFAULT_THEME_COLOR)
   const [demoStep, setDemoStep] = useState<DemoStep>('building')
   const [isCreating, setIsCreating] = useState(false)
   const [claimError, setClaimError] = useState('')
   const [sentEmail, setSentEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [verifyError, setVerifyError] = useState('')
 
   const handleCreateAccount = async (data: ScheduleBuilderData) => {
     const email = data.email
@@ -82,21 +87,50 @@ export default function LandingPage() {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: true,
         },
       })
 
       if (otpError) {
-        setClaimError('Could not send the login link. Please try again.')
+        setClaimError('Could not send the login code. Please try again.')
         setIsCreating(false)
         return
       }
 
       setSentEmail(email)
-      setDemoStep('sent')
+      setIsCreating(false)
+      setDemoStep('code')
     } catch {
       setClaimError('Something went wrong. Please try again.')
       setIsCreating(false)
+    }
+  }
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsVerifying(true)
+    setVerifyError('')
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: sentEmail,
+      token: code,
+      type: 'email',
+    })
+
+    if (error || !data.session) {
+      setVerifyError('Invalid or expired code. Please try again.')
+      setIsVerifying(false)
+      return
+    }
+
+    // Claims the pending_onboarding row saved by /api/pending-onboarding
+    // above and turns it into a real trainer account + availability rules.
+    try {
+      const res = await fetch('/api/consume-pending-onboarding', { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
+      router.push(body.redirect ?? '/onboarding')
+    } catch {
+      router.push('/onboarding')
     }
   }
 
@@ -184,16 +218,49 @@ export default function LandingPage() {
             onThemeColorChange={setPageAccent}
           />
         ) : (
-          <div className="blocs-card" style={{ alignItems: 'center', justifyContent: 'center', padding: '40px 32px', gap: '24px' }}>
-            <div className="blocs-check-circle blocs-check-circle--celebrate" style={{ margin: '0 auto' }}>
-              <div className="blocs-check-mark blocs-check-mark--celebrate" />
-            </div>
-            <div className="flex flex-col gap-1.5" style={{ alignItems: 'center', textAlign: 'center' }}>
-              <h3 style={{ margin: 0, color: 'var(--blocs-text)', fontSize: '20px', fontWeight: 700 }}>Check your email</h3>
-              <p style={{ margin: 0, color: 'var(--blocs-text-50)', fontSize: '13.5px' }}>
-                Click the link we sent to {sentEmail} to activate your schedule and go live.
-              </p>
-            </div>
+          <div className="blocs-card" style={{ padding: '40px 32px' }}>
+            <form onSubmit={handleVerifyCode} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5" style={{ alignItems: 'center', textAlign: 'center' }}>
+                <h3 style={{ margin: 0, color: 'var(--blocs-text)', fontSize: '20px', fontWeight: 700 }}>Enter your code</h3>
+                <p style={{ margin: 0, color: 'var(--blocs-text-50)', fontSize: '13.5px' }}>
+                  We sent a 6-digit code to {sentEmail} to activate your schedule and go live.
+                </p>
+              </div>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="123456"
+                autoFocus
+                required
+                className="blocs-input"
+              />
+
+              {verifyError && (
+                <p style={{ margin: 0, color: '#e05252', fontSize: '13px', textAlign: 'center' }}>{verifyError}</p>
+              )}
+
+              <button
+                type="submit"
+                className="blocs-btn-primary"
+                disabled={isVerifying || code.length !== 6}
+                style={{ background: 'white', color: 'black' }}
+              >
+                {isVerifying ? 'Verifying...' : 'Verify & go live'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDemoStep('building')}
+                style={{ background: 'none', border: 'none', color: 'var(--blocs-text-50)', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Use a different email
+              </button>
+            </form>
           </div>
         )}
       </section>

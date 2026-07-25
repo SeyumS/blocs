@@ -11,15 +11,11 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const code = url.searchParams.get('code');
-
-  if (!code) {
-    return NextResponse.redirect(new URL('/login?error=missing_code', req.url));
-  }
-
-  const cookieStore = await cookies()
+// Called right after the client verifies its OTP code (signInWithOtp +
+// verifyOtp resolve entirely client-side, so there's no redirect callback to
+// hang this on — the client hits this route once it has a session instead).
+export async function POST() {
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,50 +23,46 @@ export async function GET(req: Request) {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
-          })
+            cookieStore.set(name, value, options);
+          });
         },
       },
     }
-  )
+  );
 
-  // Exchange the magic link code for a real session
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (error || !data.session) {
-    return NextResponse.redirect(new URL('/login?error=auth_failed', req.url));
+  if (!user) {
+    return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
   }
 
-  const userId = data.session.user.id;
-  const email = data.session.user.email;
+  const email = user.email;
 
   // This is the key check: does a trainer profile already exist?
   const { data: trainer } = await supabase
     .from('trainers')
     .select('id')
-    .eq('auth_user_id', userId)
+    .eq('auth_user_id', user.id)
     .single();
 
   if (trainer) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+    return NextResponse.json({ redirect: '/dashboard' });
   }
 
   // No trainer yet — check whether this email has an account queued up from
   // the landing-page demo (built before the user ever authenticated).
   const { data: pending } = email
-    ? await supabaseAdmin
-        .from('pending_onboarding')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle()
+    ? await supabaseAdmin.from('pending_onboarding').select('*').eq('email', email).maybeSingle()
     : { data: null };
 
   if (!pending) {
-    return NextResponse.redirect(new URL('/onboarding', req.url));
+    return NextResponse.json({ redirect: '/onboarding' });
   }
 
   const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -83,7 +75,7 @@ export async function GET(req: Request) {
     .insert({
       name: pending.name,
       slug: pending.slug,
-      auth_user_id: userId,
+      auth_user_id: user.id,
       email,
       bio: pending.bio,
       trial_ends_at: trialEndsAt,
@@ -93,10 +85,10 @@ export async function GET(req: Request) {
 
   if (trainerError || !newTrainer) {
     // Most likely cause: someone else claimed this slug between the demo
-    // and the magic-link click landing here. Leave the pending row in place
-    // so the user doesn't lose their demo data — /onboarding lets them pick
-    // a new slug and finish manually.
-    return NextResponse.redirect(new URL('/onboarding?error=slug_taken', req.url));
+    // and the code verification landing here. Leave the pending row in
+    // place so the user doesn't lose their demo data — /onboarding lets
+    // them pick a new slug and finish manually.
+    return NextResponse.json({ redirect: '/onboarding?error=slug_taken' });
   }
 
   const selectedCells = Array.isArray(pending.schedule_data?.selectedCells)
@@ -120,5 +112,5 @@ export async function GET(req: Request) {
 
   await supabaseAdmin.from('pending_onboarding').delete().eq('id', pending.id);
 
-  return NextResponse.redirect(new URL('/dashboard?welcome=true', req.url));
+  return NextResponse.json({ redirect: '/dashboard?welcome=true' });
 }
