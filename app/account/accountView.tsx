@@ -4,7 +4,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import { generateTimeSlots } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { DEFAULT_THEME_COLOR, getThemeCssVars, isThemeColorKey, type ThemeColorKey } from '@/lib/theme'
+import { DEFAULT_THEME_COLOR, DEFAULT_THEME_SURFACE, getThemeCssVars, isThemeColorKey, isThemeSurface, type ThemeColorKey, type ThemeSurface } from '@/lib/theme'
 import { ThemeSwatchPicker } from '@/app/components/ThemeSwatchPicker'
 import CancelSubscriptionButton from './cancelSubscriptionButton'
 
@@ -20,6 +20,7 @@ interface Trainer {
   default_start_time: string
   default_number_blocks: number
   theme_color: string
+  theme_surface: string
   photo_url: string | null
   bio: string | null
   subscription_status: string
@@ -311,6 +312,9 @@ export const AccountView = ({
   const [themeColor, setThemeColor] = useState<ThemeColorKey>(
     isThemeColorKey(trainer.theme_color) ? trainer.theme_color : DEFAULT_THEME_COLOR
   )
+  const [themeSurface, setThemeSurface] = useState<ThemeSurface>(
+    isThemeSurface(trainer.theme_surface) ? trainer.theme_surface : DEFAULT_THEME_SURFACE
+  )
   const [photoUrl, setPhotoUrl] = useState<string | null>(trainer.photo_url)
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [photoError, setPhotoError] = useState('')
@@ -466,6 +470,7 @@ export const AccountView = ({
           default_number_blocks: Number(workBlocks),
           default_start_time: startTime,
           theme_color: themeColor,
+          theme_surface: themeSurface,
           bio,
         })
         .eq('id', trainer.id)
@@ -494,7 +499,7 @@ export const AccountView = ({
   }
 
   return (
-    <div className="blocs-theme blocs-page" style={getThemeCssVars(themeColor)}>
+    <div className="blocs-theme blocs-page" style={getThemeCssVars(themeColor, themeSurface)}>
       <div className="blocs-form-shell" style={{ padding: '32px 24px'}}>
         <form onSubmit={handleSubmit} className="blocs-form-grid">
           <div className="blocs-form-main flex flex-col gap-5">
@@ -574,7 +579,14 @@ export const AccountView = ({
 
             <div className="flex flex-col gap-2">
               <label className="blocs-label">Theme color</label>
-              <ThemeSwatchPicker value={themeColor} onChange={setThemeColor} />
+              <ThemeSwatchPicker
+                color={themeColor}
+                surface={themeSurface}
+                onChange={(nextColor, nextSurface) => {
+                  setThemeColor(nextColor)
+                  setThemeSurface(nextSurface)
+                }}
+              />
             </div>
 
             <div className="flex flex-col gap-2">

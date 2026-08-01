@@ -17,6 +17,7 @@ interface Props {
     photo_url: string | null;
     session_length_minutes: number;
     theme_color?: string | null;
+    theme_surface?: string | null;
   };
   slots: CalendarSlot[];
   welcome?: boolean;
@@ -112,7 +113,7 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
   };
 
   return (
-    <div className="mx-auto blocs-theme flex flex-col gap-4 p-6 min-h-screen w-full box-border" style={getThemeCssVars(trainer.theme_color)}>
+    <div className="mx-auto blocs-theme flex flex-col gap-4 p-6 min-h-screen w-full box-border" style={getThemeCssVars(trainer.theme_color, trainer.theme_surface)}>
       {showWelcome && (
         <div className="blocs-confirm-panel" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <div className="flex flex-col gap-0.5">
@@ -400,7 +401,7 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
           </div>
         </>
       ) : (
-       <BlockedDatesList theme_color={trainer.theme_color} />
+       <BlockedDatesList theme_color={trainer.theme_color} theme_surface={trainer.theme_surface} />
       )}
     </div>
   );

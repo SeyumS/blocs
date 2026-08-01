@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { extractAvailabilityRules } from '@/lib/scheduling'
 import { useRouter } from 'next/navigation'
-import { getThemeCssVars, DEFAULT_THEME_COLOR } from '@/lib/theme'
+import { getThemeCssVars, DEFAULT_THEME_COLOR, DEFAULT_THEME_SURFACE } from '@/lib/theme'
 import { ScheduleBuilder, type ScheduleBuilderData } from '@/app/components/ScheduleBuilder'
 import Image from 'next/image'
 
@@ -58,6 +58,7 @@ const Onboarding = () => {
         email: email,
         bio: data.bio,
         theme_color: data.themeColor,
+        theme_surface: data.themeSurface,
         trial_ends_at: trialEndsAt,
       }).select().single()
 
@@ -75,7 +76,7 @@ const Onboarding = () => {
   }
 
   return (
-    <div className="blocs-theme blocs-page" style={getThemeCssVars(DEFAULT_THEME_COLOR)}>
+    <div className="blocs-theme blocs-page" style={getThemeCssVars(DEFAULT_THEME_COLOR, DEFAULT_THEME_SURFACE)}>
       <div className="blocs-brand">
         <div className="blocs-brand-row">
           <Image src="/blocs-logo.svg" alt="Blocs" width={100} height={100} />

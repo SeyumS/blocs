@@ -20,7 +20,10 @@ interface Exception {
   reason: string | null;
 }
 
-export default function BlockedDatesList({ theme_color }: { theme_color?: string | null } = {}) {
+export default function BlockedDatesList({
+  theme_color,
+  theme_surface,
+}: { theme_color?: string | null; theme_surface?: string | null } = {}) {
   const [exceptions, setExceptions] = useState<Exception[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -68,14 +71,14 @@ export default function BlockedDatesList({ theme_color }: { theme_color?: string
   // e.g. Dec 20, 21, 22 (all full-day, same reason) -> "Dec 20 - Dec 22"
   const groupedRanges = groupConsecutiveFullDayBlocks(exceptions);
 
-  if (loading) return <p className="blocs-theme" style={{ background: 'transparent', color: 'var(--blocs-text-45)', fontSize: '13px', ...getThemeCssVars(theme_color) }}>Loading blocked dates...</p>;
-  if (exceptions.length === 0) return <p className="blocs-theme" style={{ background: 'transparent', color: 'var(--blocs-text-45)', fontSize: '13px', ...getThemeCssVars(theme_color) }}>No upcoming blocked dates.</p>;
+  if (loading) return <p className="blocs-theme" style={{ background: 'transparent', color: 'var(--blocs-text-45)', fontSize: '13px', ...getThemeCssVars(theme_color, theme_surface) }}>Loading blocked dates...</p>;
+  if (exceptions.length === 0) return <p className="blocs-theme" style={{ background: 'transparent', color: 'var(--blocs-text-45)', fontSize: '13px', ...getThemeCssVars(theme_color, theme_surface) }}>No upcoming blocked dates.</p>;
 
   return (
-    <div className="blocs-theme flex flex-col gap-3" style={{ background: 'transparent', ...getThemeCssVars(theme_color) }}>
+    <div className="blocs-theme flex flex-col gap-3" style={{ background: 'transparent', ...getThemeCssVars(theme_color, theme_surface) }}>
       <h3 style={{ margin: 0, color: 'var(--blocs-text)', fontSize: '15px', fontWeight: 700 }}>Upcoming blocked time</h3>
       <button className="blocs-day-chip active" style={{ padding: '8px 16px' }} onClick={() => setShowAddBlockedDateModal(!showAddBlockedDateModal)}>Block Time</button>
-      {showAddBlockedDateModal && <BlockedTimeForm theme_color={theme_color} />}
+      {showAddBlockedDateModal && <BlockedTimeForm theme_color={theme_color} theme_surface={theme_surface} />}
       <ul className="flex flex-col gap-2" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {groupedRanges.map((group) => (
           <li

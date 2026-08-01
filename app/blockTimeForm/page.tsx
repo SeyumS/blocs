@@ -6,9 +6,11 @@ import { getThemeCssVars } from '@/lib/theme';
 export default function BlockTimeForm({
   onBlocked = () => {},
   theme_color,
+  theme_surface,
 }: {
   onBlocked?: () => void;
   theme_color?: string | null;
+  theme_surface?: string | null;
 }) {
   const [mode, setMode] = useState<'fullDay' | 'partialDay'>('fullDay');
   const [startDate, setStartDate] = useState('');
@@ -45,7 +47,7 @@ export default function BlockTimeForm({
   };
 
   return (
-    <div className="blocs-theme flex flex-col gap-3" style={{ background: 'transparent', ...getThemeCssVars(theme_color) }}>
+    <div className="blocs-theme flex flex-col gap-3" style={{ background: 'transparent', ...getThemeCssVars(theme_color, theme_surface) }}>
       <div className="flex flex-col gap-2">
         <label className="flex items-center gap-2" style={{ color: 'var(--blocs-text-60)', fontSize: '13px' }}>
           <input type="radio" checked={mode === 'fullDay'} onChange={() => setMode('fullDay')} />

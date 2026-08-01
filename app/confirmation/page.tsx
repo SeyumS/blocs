@@ -8,19 +8,21 @@ const Confirmation = async () => {
   const { data: { user } } = await supabase.auth.getUser()
 
   let themeColor: string | null = null
+  let themeSurface: string | null = null
   let slug: string | null = null
   if (user) {
     const { data: trainer } = await supabase
       .from('trainers')
-      .select('theme_color, slug')
+      .select('theme_color, theme_surface, slug')
       .eq('auth_user_id', user.id)
       .single()
     themeColor = trainer?.theme_color ?? null
+    themeSurface = trainer?.theme_surface ?? null
     slug = trainer?.slug ?? null
   }
 
   return (
-    <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(themeColor) }}>
+    <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(themeColor, themeSurface) }}>
       <ConfirmationRedirect redirectTo={slug ? `/${slug}` : '/dashboard'} />
       <div className="blocs-card" style={{ alignItems: 'center', justifyContent: 'center', padding: '40px 32px', gap: '24px' }}>
         <div className="blocs-check-circle blocs-check-circle--celebrate">

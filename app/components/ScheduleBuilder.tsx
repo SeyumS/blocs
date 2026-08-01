@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useRef, useState } from 'react'
 import { generateTimeSlots } from '@/lib/utils'
-import { DEFAULT_THEME_COLOR, getThemeCssVars, type ThemeColorKey } from '@/lib/theme'
+import { DEFAULT_THEME_COLOR, DEFAULT_THEME_SURFACE, getThemeCssVars, type ThemeColorKey, type ThemeSurface } from '@/lib/theme'
 import { ThemeSwatchPicker } from '@/app/components/ThemeSwatchPicker'
 
 export interface ScheduleBuilderData {
@@ -9,6 +9,7 @@ export interface ScheduleBuilderData {
   slug: string
   bio: string
   themeColor: ThemeColorKey
+  themeSurface: ThemeSurface
   cellIds: string[]
   email?: string
 }
@@ -90,6 +91,8 @@ export function ScheduleBuilder({
   error,
   themeColor: controlledThemeColor,
   onThemeColorChange,
+  themeSurface: controlledThemeSurface,
+  onThemeSurfaceChange,
 }: {
   onSubmit: (data: ScheduleBuilderData) => void | Promise<void>
   submitLabel: string
@@ -102,6 +105,8 @@ export function ScheduleBuilder({
   // onboarding does.
   themeColor?: ThemeColorKey
   onThemeColorChange?: (key: ThemeColorKey) => void
+  themeSurface?: ThemeSurface
+  onThemeSurfaceChange?: (surface: ThemeSurface) => void
 }) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -110,6 +115,9 @@ export function ScheduleBuilder({
   const [internalThemeColor, setInternalThemeColor] = useState<ThemeColorKey>(DEFAULT_THEME_COLOR)
   const themeColor = controlledThemeColor ?? internalThemeColor
   const setThemeColor = onThemeColorChange ?? setInternalThemeColor
+  const [internalThemeSurface, setInternalThemeSurface] = useState<ThemeSurface>(DEFAULT_THEME_SURFACE)
+  const themeSurface = controlledThemeSurface ?? internalThemeSurface
+  const setThemeSurface = onThemeSurfaceChange ?? setInternalThemeSurface
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const toggleCell = (cellId: string, forceMode?: boolean) => {
@@ -220,13 +228,14 @@ export function ScheduleBuilder({
       slug,
       bio: bio.trim(),
       themeColor,
+      themeSurface,
       cellIds,
       ...(showEmailField ? { email } : {}),
     })
   }
 
   return (
-    <div className="blocs-card blocs-form-shell" style={{ padding: '32px 24px', ...getThemeCssVars(themeColor) }}>
+    <div className="blocs-card blocs-form-shell" style={{ padding: '32px 24px', ...getThemeCssVars(themeColor, themeSurface) }}>
       <h1 style={{ margin: '0 0 4px', color: 'var(--blocs-text)', fontSize: '20px', fontWeight: 700, letterSpacing: '-0.01em' }}>Set up your schedule</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--blocs-text-50)', fontSize: '13px' }}>Two minutes, then you&apos;re bookable.</p>
 
@@ -264,7 +273,14 @@ export function ScheduleBuilder({
 
           <div className="flex flex-col gap-2">
             <label className="blocs-label">Theme color</label>
-            <ThemeSwatchPicker value={themeColor} onChange={setThemeColor} />
+            <ThemeSwatchPicker
+              color={themeColor}
+              surface={themeSurface}
+              onChange={(nextColor, nextSurface) => {
+                setThemeColor(nextColor)
+                setThemeSurface(nextSurface)
+              }}
+            />
           </div>
 
           <div className="flex flex-col gap-2">

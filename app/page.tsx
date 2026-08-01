@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
-import { DEFAULT_THEME_COLOR, getThemeCssVars, type ThemeColorKey } from '@/lib/theme'
+import { DEFAULT_THEME_COLOR, DEFAULT_THEME_SURFACE, getThemeCssVars, type ThemeColorKey, type ThemeSurface } from '@/lib/theme'
 import { ThemeSwatchPicker } from '@/app/components/ThemeSwatchPicker'
 import { ScheduleBuilder, type ScheduleBuilderData } from '@/app/components/ScheduleBuilder'
 
@@ -45,6 +45,7 @@ type DemoStep = 'building' | 'code'
 export default function LandingPage() {
   const router = useRouter()
   const [pageAccent, setPageAccent] = useState<ThemeColorKey>(DEFAULT_THEME_COLOR)
+  const [pageSurface, setPageSurface] = useState<ThemeSurface>(DEFAULT_THEME_SURFACE)
   const [demoStep, setDemoStep] = useState<DemoStep>('building')
   const [isCreating, setIsCreating] = useState(false)
   const [claimError, setClaimError] = useState('')
@@ -135,7 +136,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="blocs-theme" style={{ minHeight: '100vh', width: '100%', ...getThemeCssVars(pageAccent) }}>
+    <div className="blocs-theme" style={{ minHeight: '100vh', width: '100%', ...getThemeCssVars(pageAccent, pageSurface) }}>
       {/* 1. Sticky header */}
       <header
         className="sticky top-0 z-50 flex items-center justify-between"
@@ -161,7 +162,14 @@ export default function LandingPage() {
 
         <div className="flex flex-col items-center gap-2" style={{ marginBottom: '32px' }}>
           <span className="blocs-label">Pick your accent color</span>
-          <ThemeSwatchPicker value={pageAccent} onChange={setPageAccent} />
+          <ThemeSwatchPicker
+            color={pageAccent}
+            surface={pageSurface}
+            onChange={(nextColor, nextSurface) => {
+              setPageAccent(nextColor)
+              setPageSurface(nextSurface)
+            }}
+          />
         </div>
 
         <a href="#demo" className="blocs-btn-primary" style={{ display: 'inline-block', textDecoration: 'none', color: '#000' }}>
@@ -216,6 +224,8 @@ export default function LandingPage() {
             error={claimError}
             themeColor={pageAccent}
             onThemeColorChange={setPageAccent}
+            themeSurface={pageSurface}
+            onThemeSurfaceChange={setPageSurface}
           />
         ) : (
           <div className="blocs-card" style={{ padding: '40px 32px' }}>

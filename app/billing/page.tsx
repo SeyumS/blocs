@@ -9,6 +9,7 @@ interface Trainer {
   subscription_status: string
   trial_ends_at: string | null
   theme_color: string
+  theme_surface: string
 }
 
 function BillingPage({ trainer }: { trainer: Trainer }) {
@@ -40,7 +41,7 @@ function BillingPage({ trainer }: { trainer: Trainer }) {
   }
 
   return (
-    <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainer.theme_color) }}>
+    <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainer.theme_color, trainer.theme_surface) }}>
       <div className="blocs-brand">
         <div className="blocs-brand-row">
           <div className="blocs-brand-mark">
@@ -101,7 +102,7 @@ export default function Billing() {
 
       const { data } = await supabase
         .from('trainers')
-        .select('subscription_status, trial_ends_at, theme_color')
+        .select('subscription_status, trial_ends_at, theme_color, theme_surface')
         .eq('auth_user_id', user.id)
         .single()
 

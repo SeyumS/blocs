@@ -16,6 +16,7 @@ interface Props {
     photo_url: string | null;
     session_length_minutes: number;
     theme_color?: string | null;
+    theme_surface?: string | null;
   };
   slots: CalendarSlot[]; // pre-computed server-side, grouped-ready
 }
@@ -192,7 +193,7 @@ export default function CustomerView({ trainer, slots }: Props) {
 
   if (status === 'needs_name') {
     return (
-      <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainer.theme_color) }}>
+      <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainer.theme_color, trainer.theme_surface) }}>
         <div className="blocs-confirm-panel blocs-modal-panel w-full" style={{ maxWidth: '480px' }}>
           <span className="blocs-confirm-panel-title">What should I call you?</span>
           <form onSubmit={saveBookingName} className="flex flex-col gap-2">
@@ -219,7 +220,7 @@ export default function CustomerView({ trainer, slots }: Props) {
 
   if (status === 'booked') {
     return (
-      <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainer.theme_color) }}>
+      <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainer.theme_color, trainer.theme_surface) }}>
         <div className="blocs-card" style={{ alignItems: 'center', justifyContent: 'center', padding: '40px 32px', gap: '24px' }}>
           <div className="blocs-check-circle blocs-check-circle--celebrate">
             <div className="blocs-check-mark blocs-check-mark--celebrate" />
@@ -309,7 +310,7 @@ export default function CustomerView({ trainer, slots }: Props) {
     slot.blocked ? 'Blocked' : slot.booking ? 'Booked' : slot.available ? 'Open' : 'Unavailable';
 
   return (
-    <div className="blocs-theme blocs-page" style={getThemeCssVars(trainer.theme_color)}>
+    <div className="blocs-theme blocs-page" style={getThemeCssVars(trainer.theme_color, trainer.theme_surface)}>
       <div className="flex items-center flex-col justify-center gap-1 w-full max-w-[640px] md:max-w-4xl md:items-start" style={{ marginBottom: '20px' }}>
         <div className="flex flex-col md:flex-row items-center md:items-end md:gap-3 align-bottom gap-3.5">
           {trainer.photo_url && (

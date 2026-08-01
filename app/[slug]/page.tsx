@@ -19,7 +19,7 @@ export default async function TrainerBookingPage({
   // Look up the trainer by slug via the public view — anon has no read access to the base table
   const { data: trainer, error } = await supabase
     .from('trainer_public_profiles')
-    .select('id, name, slug, bio, photo_url, session_length_minutes, timezone, theme_color')
+    .select('id, name, slug, bio, photo_url, session_length_minutes, timezone, theme_color, theme_surface')
     .eq('slug', slug)
     .single();
 

@@ -20,7 +20,7 @@ const Cancel = async ({ params }: { params: Promise<{ slug: string }> }) => {
 
 
   return (
-    <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainerData?.theme_color) }}>
+    <div className="blocs-theme blocs-page" style={{ justifyContent: 'center', ...getThemeCssVars(trainerData?.theme_color, trainerData?.theme_surface) }}>
       <div className="blocs-card flex flex-col gap-4" style={{ padding: '32px 24px' }}>
         <h1 style={{ margin: 0, color: 'var(--blocs-text)', fontSize: '20px', fontWeight: 700 }}>Cancel booking</h1>
         <p style={{ margin: 0, color: 'var(--blocs-text-50)', fontSize: '13.5px' }}>
