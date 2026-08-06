@@ -9,11 +9,15 @@ export default async function IntakeFormPage() {
 
   const { data } = await supabase
     .from('trainers')
-    .select('intake_form_schema')
+    .select('intake_form_schema, theme_color, theme_surface')
     .eq('auth_user_id', user.id)
     .single()
 
   return (
-    <IntakeFormBuilder initialFields={data?.intake_form_schema ?? []} />
+    <IntakeFormBuilder
+      initialFields={data?.intake_form_schema ?? []}
+      themeColor={data?.theme_color}
+      themeSurface={data?.theme_surface}
+    />
   )
 }
