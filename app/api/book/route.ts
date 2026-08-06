@@ -12,9 +12,17 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY! // never expose this to the client
 );
 
+interface IntakeField {
+  id: string;
+  label: string;
+  type: 'text' | 'textarea' | 'select' | 'checkbox';
+  required: boolean;
+  options?: string[];
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
-  const { trainerId, startsAt, endsAt, isRecurring, client } = body;
+  const { trainerId, startsAt, endsAt, isRecurring, client, intakeFormResponses } = body;
 
   if (!trainerId || !startsAt || !endsAt) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -28,12 +36,14 @@ export async function POST(req: Request) {
   // an arbitrary time outside the trainer's hours or during a blocked date.
   const { data: trainer } = await supabaseAdmin
     .from('trainers')
-    .select('timezone')
+    .select('timezone, intake_form_schema')
     .eq('id', trainerId)
     .single();
   if (!trainer) {
     return NextResponse.json({ error: 'Trainer not found' }, { status: 404 });
   }
+
+  const intakeSchema: IntakeField[] = Array.isArray(trainer.intake_form_schema) ? trainer.intake_form_schema : [];
 
   const [{ data: rules }, { data: exceptions }] = await Promise.all([
     supabaseAdmin.from('availability_rules').select('day_of_week, start_time, end_time').eq('trainer_id', trainerId),
@@ -58,14 +68,15 @@ export async function POST(req: Request) {
   // 1. Find or create the client record
   let clientId: string;
   let isNew = false;
+  let hasCompletedIntake = false;
   if (client.email) {
     const { data: existing } = await supabaseAdmin
       .from('clients')
-      .select('id, name')
+      .select('id, name, intake_form_completed_at')
       .eq('trainer_id', trainerId)
       .eq('email', client.email)
       .maybeSingle();
-       
+
     if (existing) {
       clientId = existing.id;
       // Returning clients with only a placeholder still need the name step.
@@ -73,6 +84,7 @@ export async function POST(req: Request) {
         !existing.name ||
         existing.name === 'anonymous Client' ||
         existing.name.toLowerCase() === 'anonymous client';
+      hasCompletedIntake = !!existing.intake_form_completed_at;
     } else {
       const { data: newClient, error } = await supabaseAdmin
         .from('clients')
@@ -94,7 +106,27 @@ export async function POST(req: Request) {
     isNew = true;
   }
 
-  // 2. If recurring, create the series first
+  // 2. First-time clients answer the trainer's custom intake questions
+  //    before the booking is created. `intakeFormResponses` is absent on the
+  //    initial request — the client re-submits it once the customer fills
+  //    the form the UI renders after seeing `needsIntakeForm`.
+  const needsIntakeForm = intakeSchema.length > 0 && !hasCompletedIntake && !intakeFormResponses;
+  if (needsIntakeForm) {
+    return NextResponse.json({ needsIntakeForm: true, formSchema: intakeSchema, clientId, isNew });
+  }
+
+  if (intakeSchema.length > 0 && intakeFormResponses) {
+    const missingRequired = intakeSchema.some((field) => {
+      if (!field.required) return false;
+      const value = intakeFormResponses[field.id];
+      return field.type === 'checkbox' ? value !== true : !String(value ?? '').trim();
+    });
+    if (missingRequired) {
+      return NextResponse.json({ error: 'Please answer all required questions' }, { status: 400 });
+    }
+  }
+
+  // 3. If recurring, create the series first
   let seriesId: string | null = null;
   if (isRecurring) {
     const startDate = new Date(startsAt);
@@ -114,7 +146,7 @@ export async function POST(req: Request) {
     seriesId = series.id;
   }
 
-  // 3. Insert the actual booking — the UNIQUE(trainer_id, starts_at) constraint
+  // 4. Insert the actual booking — the UNIQUE(trainer_id, starts_at) constraint
   //    is what actually prevents double-booking races here
   const { data: booking, error: bookingError } = await supabaseAdmin
     .from('bookings')
@@ -135,6 +167,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Slot already booked' }, { status: 409 });
     }
     return NextResponse.json({ error: bookingError.message }, { status: 500 });
+  }
+
+  if (intakeSchema.length > 0 && intakeFormResponses && !hasCompletedIntake) {
+    await supabaseAdmin
+      .from('clients')
+      .update({ intake_form_responses: intakeFormResponses, intake_form_completed_at: new Date().toISOString() })
+      .eq('id', clientId);
   }
 
   if (client.email) {

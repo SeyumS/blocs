@@ -6,6 +6,14 @@ import { format } from 'date-fns';
 import type { CalendarSlot } from '@/lib/scheduling';
 import { getThemeCssVars } from '@/lib/theme';
 
+interface FormField {
+  id: string;
+  label: string;
+  type: 'text' | 'textarea' | 'select' | 'checkbox';
+  required: boolean;
+  options?: string[]; // only for 'select'
+}
+
 
 interface Props {
   trainer: {
@@ -48,6 +56,8 @@ export default function CustomerView({ trainer, slots }: Props) {
   const [waitlistToastHiding, setWaitlistToastHiding] = useState(false);
   const [waitlistInfo, setWaitlistInfo] = useState<boolean>(false);
   const [nameInfo, setNameInfo] = useState<boolean>(false);
+  const [intakeForm, setIntakeForm] = useState<FormField[] | null>(null);
+  const [intakeAnswers, setIntakeAnswers] = useState<Record<string, string | boolean>>({});
   const showWaitlistToast = status === 'waitlisted' && !waitlistToastHiding;
 
   // On a successful waitlist entry, flash a confirmation toast for a couple
@@ -77,6 +87,8 @@ export default function CustomerView({ trainer, slots }: Props) {
       setName('');
       setEmail('');
       setClientId(null);
+      setIntakeForm(null);
+      setIntakeAnswers({});
       router.refresh();
     }, 5000);
     return () => clearTimeout(resetTimer);
@@ -136,6 +148,7 @@ export default function CustomerView({ trainer, slots }: Props) {
           endsAt: selectedSlot.end,
           isRecurring,
           client: { name: name.trim() || undefined, email: email.trim(), phone },
+          intakeFormResponses: intakeForm ? intakeAnswers : undefined,
         }),
       });
 
@@ -152,6 +165,12 @@ export default function CustomerView({ trainer, slots }: Props) {
       }
 
       setClientId(data.clientId ?? data.booking?.client_id ?? null);
+
+      if (data.needsIntakeForm) {
+        setIntakeForm(data.formSchema); // triggers rendering the form, doesn't book yet
+        setStatus('idle');
+        return;
+      }
 
       if (data.isNew) {
         setName('');
@@ -308,6 +327,12 @@ export default function CustomerView({ trainer, slots }: Props) {
 
   const slotLabel = (slot: CalendarSlot) =>
     slot.blocked ? 'Blocked' : slot.booking ? 'Booked' : slot.available ? 'Open' : 'Unavailable';
+
+  const intakeMissingRequired = (intakeForm ?? []).some((field) => {
+    if (!field.required) return false;
+    const value = intakeAnswers[field.id];
+    return field.type === 'checkbox' ? value !== true : !String(value ?? '').trim();
+  });
 
   return (
     <div className="blocs-theme blocs-page" style={getThemeCssVars(trainer.theme_color, trainer.theme_surface)}>
@@ -529,7 +554,7 @@ export default function CustomerView({ trainer, slots }: Props) {
         You&apos;re on the waitlist
       </div>
 
-      {notInDataBase && (
+      {/*{notInDataBase && (
         <div className="blocs-modal-overlay">
           <div className="blocs-confirm-panel blocs-modal-panel w-full" style={{ maxWidth: '480px' }}>
             <span className="blocs-confirm-panel-title">What should I call you?</span>
@@ -549,6 +574,81 @@ export default function CustomerView({ trainer, slots }: Props) {
                 Save
               </button>
             </form>
+          </div>
+        </div>
+      )}*/}
+      {intakeForm && (
+        <div
+          className="blocs-modal-overlay"
+          onClick={() => {
+            setIntakeForm(null)
+            setIntakeAnswers({})
+          }}
+        >
+          <div
+            className="blocs-confirm-panel blocs-modal-panel w-full flex flex-col gap-3"
+            style={{ maxWidth: '480px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="blocs-slot-action-neutral"
+              style={{ alignSelf: 'flex-start' }}
+              onClick={() => {
+                setIntakeForm(null)
+                setIntakeAnswers({})
+              }}
+            >
+              Back
+            </button>
+            <span className="blocs-confirm-panel-title">A few quick questions before we confirm your session</span>
+            {intakeForm.map((field) => (
+              <div key={field.id} className="flex flex-col gap-1.5">
+                {field.type === 'checkbox' ? (
+                  <label className="flex items-center gap-2" style={{ color: 'var(--blocs-text-60)', fontSize: '13px' }}>
+                    <input
+                      type="checkbox"
+                      checked={intakeAnswers[field.id] === true}
+                      onChange={(e) => setIntakeAnswers((a) => ({ ...a, [field.id]: e.target.checked }))}
+                    />
+                    {field.label}{field.required && ' *'}
+                  </label>
+                ) : (
+                  <>
+                    <label className="blocs-label" style={{ textTransform: 'none' }}>{field.label}{field.required && ' *'}</label>
+                    {field.type === 'textarea' ? (
+                      <textarea
+                        className="blocs-input"
+                        value={typeof intakeAnswers[field.id] === 'string' ? (intakeAnswers[field.id] as string) : ''}
+                        onChange={(e) => setIntakeAnswers((a) => ({ ...a, [field.id]: e.target.value }))}
+                      />
+                    ) : field.type === 'select' ? (
+                      <select
+                        className="blocs-select blocs-input"
+                        value={typeof intakeAnswers[field.id] === 'string' ? (intakeAnswers[field.id] as string) : ''}
+                        onChange={(e) => setIntakeAnswers((a) => ({ ...a, [field.id]: e.target.value }))}
+                      >
+                        <option value="">Select...</option>
+                        {field.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        className="blocs-input"
+                        value={typeof intakeAnswers[field.id] === 'string' ? (intakeAnswers[field.id] as string) : ''}
+                        onChange={(e) => setIntakeAnswers((a) => ({ ...a, [field.id]: e.target.value }))}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+            {status === 'error' && <p className="blocs-error">{errorMsg}</p>}
+            <button
+              className="blocs-btn-primary"
+              onClick={handleSubmit}
+              disabled={status === 'submitting' || intakeMissingRequired}
+            >
+              {status === 'submitting' ? 'Booking...' : 'Confirm booking'}
+            </button>
           </div>
         </div>
       )}

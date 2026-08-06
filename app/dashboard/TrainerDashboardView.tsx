@@ -145,9 +145,14 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
             </h1>
           </div>
 
-          <button className="blocs-day-chip" onClick={() => router.push('/account')} style={{ padding: '8px 16px' }}>
-            Edit Profile
-          </button>
+          <div className="flex gap-2">
+            <button className="blocs-day-chip" onClick={() => router.push('/account')} style={{ padding: '8px 16px' }}>
+              Edit Profile
+            </button>
+            <button className="blocs-day-chip" onClick={() => router.push('/dashboard/intake-form')} style={{ padding: '8px 16px' }}>
+              Intake Form
+            </button>
+          </div>
 
           {errorMsg && <p className="blocs-error">{errorMsg}</p>}
           <div className="flex gap-2 justify-center md:justify-start">

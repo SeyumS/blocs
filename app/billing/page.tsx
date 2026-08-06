@@ -26,8 +26,10 @@ function BillingPage({ trainer }: { trainer: Trainer }) {
     setIsLoading(true)
     setErrorMsg('')
     try {
+      console.log('1')
       const res = await fetch('/api/billing/checkout', { method: 'POST' })
       const data = await res.json()
+      console.log('data: ',data)
       if (!res.ok || !data.url) {
         setErrorMsg(data.error ?? 'Something went wrong — please try again.')
         setIsLoading(false)
