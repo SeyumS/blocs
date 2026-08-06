@@ -7,6 +7,16 @@ import { supabase } from '@/lib/supabase';
 import type { CalendarSlot } from '@/lib/scheduling';
 import { getThemeCssVars } from '@/lib/theme';
 import BlockedDatesList from '../blockedDatesList/page';
+import IntakeFormBuilder from './intake-form/IntakeFormBuilder';
+
+interface FormField {
+  id: string;
+  label: string;
+  type: 'text' | 'textarea' | 'select' | 'checkbox';
+  required: boolean;
+  options?: string[]; // only for 'select'
+}
+
 
 interface Props {
   trainer: {
@@ -18,6 +28,7 @@ interface Props {
     session_length_minutes: number;
     theme_color?: string | null;
     theme_surface?: string | null;
+    intake_form_schema?: FormField[] | null;
   };
   slots: CalendarSlot[];
   welcome?: boolean;
@@ -32,7 +43,7 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
   const [pending, setPending] = useState<PendingAction>(null);
   const [busyBookingId, setBusyBookingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
-  const [showAllSessions, setShowAllSessions] = useState(true);
+  const [screenShown, setScreenShown] = useState<'sessions'|'blocks'|'form'>('sessions');
   const [activeDateIndex, setActiveDateIndex] = useState(0);
   const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
 
@@ -157,16 +168,16 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
           {errorMsg && <p className="blocs-error">{errorMsg}</p>}
           <div className="flex gap-2 justify-center md:justify-start">
             <button
-              className={showAllSessions ? 'blocs-day-chip active' : 'blocs-day-chip'}
+              className={screenShown === 'sessions' ? 'blocs-day-chip active' : 'blocs-day-chip'}
               style={{ flex: '0 0 auto', padding: '8px 16px' }}
-              onClick={() => setShowAllSessions(true)}
+              onClick={() => setScreenShown('sessions')}
             >
               All Sessions
             </button>
             <button
-              className={!showAllSessions ? 'blocs-day-chip active' : 'blocs-day-chip'}
+              className={screenShown === 'blocks' ? 'blocs-day-chip active' : 'blocs-day-chip'}
               style={{ flex: '0 0 auto', padding: '8px 16px' }}
-              onClick={() => setShowAllSessions(false)}
+              onClick={() => setScreenShown('blocks')}
             >
               Blocked Sessions
             </button>
@@ -174,7 +185,7 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
         </div>
       </div>
 
-      {showAllSessions ? (
+      {screenShown === 'sessions' ? (
         <>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
             <button className="blocs-slot-action-neutral" onClick={() => changeWeek(-1)} disabled={weekOffset === 0}>
@@ -405,8 +416,14 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
             </div>
           </div>
         </>
-      ) : (
+      ) : screenShown === 'blocks' ? (
        <BlockedDatesList theme_color={trainer.theme_color} theme_surface={trainer.theme_surface} />
+      ) : screenShown === 'form' ? (
+        <IntakeFormBuilder 
+        initialFields={trainer.intake_form_schema ?? []}
+        themeColor={trainer.theme_color} themeSurface={trainer.theme_surface} />
+      ) : (
+        <div>No screen shown</div>
       )}
     </div>
   );

@@ -89,14 +89,14 @@ export default function IntakeFormBuilder({
               <div className="flex gap-2 flex-wrap">
                 <input
                   className="blocs-input"
-                  style={{ flex: '1 1 200px' }}
+                  style={{ flex: '1 1 200px', minWidth: 0, width: '100%' }}
                   placeholder="Question"
                   value={field.label}
                   onChange={(e) => updateField(field.id, { label: e.target.value })}
                 />
                 <select
                   className="blocs-select"
-                  style={{ flex: '0 0 160px' }}
+                  style={{ flex: '1 1 160px', minWidth: 0, maxWidth: '100%' }}
                   value={field.type}
                   onChange={(e) => updateField(field.id, { type: e.target.value as FormField['type'] })}
                 >
@@ -109,6 +109,7 @@ export default function IntakeFormBuilder({
               {field.type === 'select' && (
                 <input
                   className="blocs-input"
+                  style={{ width: '100%', minWidth: 0 }}
                   placeholder="Options, comma separated"
                   value={field.options?.join(', ') ?? ''}
                   onChange={(e) =>
