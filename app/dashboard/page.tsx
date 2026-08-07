@@ -34,7 +34,7 @@ export default async function DashboardPage({
 
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('id, starts_at, ends_at, series_id, clients(name)')
+    .select('id, starts_at, ends_at, series_id, clients(id, name, intake_form_responses)')
     .eq('trainer_id', trainer.id)
     .eq('status', 'confirmed');
 
@@ -46,6 +46,8 @@ export default async function DashboardPage({
       ends_at: b.ends_at,
       series_id: b.series_id,
       client_name: client?.name,
+      client_id: client?.id,
+      intake_form_responses: client?.intake_form_responses,
     };
   });
 

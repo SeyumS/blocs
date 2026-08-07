@@ -388,6 +388,33 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
               </div>
             </div>
 
+            {!!trainer.intake_form_schema?.length && (
+              <div className="flex flex-col gap-2">
+                <span className="blocs-label">Client details</span>
+                {openSlot.booking.intakeFormResponses ? (
+                  <div className="blocs-summary-card">
+                    {trainer.intake_form_schema.map((field) => {
+                      const value = openSlot.booking!.intakeFormResponses?.[field.id];
+                      const display =
+                        field.type === 'checkbox'
+                          ? value === true ? 'Yes' : 'No'
+                          : (value ? String(value) : '—');
+                      return (
+                        <div key={field.id} className="blocs-summary-row">
+                          <span className="blocs-summary-key">{field.label}</span>
+                          <span className="blocs-summary-value">{display}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, color: 'var(--blocs-text-40)', fontSize: '13px' }}>
+                    No intake form responses on file.
+                  </p>
+                )}
+              </div>
+            )}
+
             {pending?.bookingId === openSlot.booking.id ? (
               <>
                 <span style={{ color: 'var(--blocs-text-60)', fontSize: '13px' }}>

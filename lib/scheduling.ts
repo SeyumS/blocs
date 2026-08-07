@@ -22,6 +22,8 @@ export interface BusySlot {
   id?: string;
   series_id?: string | null;
   client_name?: string;
+  client_id?: string;
+  intake_form_responses?: Record<string, string | boolean> | null;
 }
 
 export interface CalendarSlot {
@@ -35,8 +37,10 @@ export interface CalendarSlot {
   isBreak?: boolean;
   booking?: {
     id: string;
+    clientId?: string;
     clientName: string;
     seriesId: string | null;
+    intakeFormResponses?: Record<string, string | boolean> | null;
   };
 }
 
@@ -231,8 +235,10 @@ export function computeCalendarSlots({
           booking: busyMatch?.id
             ? {
                 id: busyMatch.id,
+                clientId: busyMatch.client_id,
                 clientName: busyMatch.client_name ?? 'Booked',
                 seriesId: busyMatch.series_id ?? null,
+                intakeFormResponses: busyMatch.intake_form_responses ?? null,
               }
             : undefined,
         });
