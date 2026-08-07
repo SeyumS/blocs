@@ -45,12 +45,12 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
   const [errorMsg, setErrorMsg] = useState('');
   const [screenShown, setScreenShown] = useState<'sessions'|'blocks'|'form'>('sessions');
   const [activeDateIndex, setActiveDateIndex] = useState(0);
-  const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
+  const [openSlot, setOpenSlot] = useState<CalendarSlot | null>(null);
 
   const changeWeek = (delta: number) => {
     setWeekOffset((w) => w + delta);
     setActiveDateIndex(0);
-    setExpandedBookingId(null);
+    setOpenSlot(null);
     setPending(null);
   };
 
@@ -86,7 +86,7 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
 
     setBusyBookingId(null);
     setPending(null);
-    setExpandedBookingId(null);
+    setOpenSlot(null);
     if (error) {
       setErrorMsg('Could not cancel that session — please try again.');
       return;
@@ -115,7 +115,7 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
 
     setBusyBookingId(null);
     setPending(null);
-    setExpandedBookingId(null);
+    setOpenSlot(null);
     if (bookingsError || seriesError) {
       setErrorMsg('Could not cancel the series — please try again.');
       return;
@@ -222,9 +222,6 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
 
                       const booking = slot.booking;
                       const blocked = slot.blocked
-                      const isExpanded = !!booking && expandedBookingId === booking.id;
-                      const isPending = pending?.bookingId === booking?.id;
-                      const isBusy = busyBookingId === booking?.id;
 
                       let slotClass = slot.available
                         ? 'blocs-slot blocs-slot--open'
@@ -240,53 +237,15 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
                           ) : blocked ? (
                             <div className={slotClass} style={{ justifyContent: 'center' }}>Blocked</div>
                           ) : booking ? (
-                            <div className="flex flex-col gap-1.5 items-center">
-                              <div
-                                className={slotClass}
-                                style={{ justifyContent: 'center', cursor: 'pointer' }}
-                                onClick={() => {
-                                  setExpandedBookingId(isExpanded ? null : booking.id);
-                                  setPending(null);
-                                }}
-                              >
-                                {booking.clientName}
-                              </div>
-                              {isExpanded && (
-                                isPending ? (
-                                  <>
-                                    <span style={{ color: 'var(--blocs-text-60)', fontSize: '11.5px' }}>
-                                      Cancel {pending!.kind === 'series' ? 'series' : 'session'}?
-                                    </span>
-                                    <div className="flex gap-1.5 justify-center flex-wrap">
-                                      <button
-                                        className="blocs-slot-action-danger"
-                                        disabled={isBusy}
-                                        onClick={() =>
-                                          pending!.kind === 'series' && booking.seriesId
-                                            ? cancelSeries(booking.seriesId, booking.id)
-                                            : cancelSingle(booking.id)
-                                        }
-                                      >
-                                        {isBusy ? '...' : 'Yes'}
-                                      </button>
-                                      <button className="blocs-slot-action-neutral" disabled={isBusy} onClick={() => setPending(null)}>
-                                        No
-                                      </button>
-                                    </div>
-                                  </>
-                                ) : (
-                                  <div className="flex gap-1.5 justify-center flex-wrap">
-                                    <button className="blocs-slot-action-danger" onClick={() => setPending({ bookingId: booking.id, kind: 'single' })}>
-                                      Cancel
-                                    </button>
-                                    {booking.seriesId && (
-                                      <button className="blocs-slot-action-danger" onClick={() => setPending({ bookingId: booking.id, kind: 'series' })}>
-                                        Cancel series
-                                      </button>
-                                    )}
-                                  </div>
-                                )
-                              )}
+                            <div
+                              className={slotClass}
+                              style={{ justifyContent: 'center', cursor: 'pointer' }}
+                              onClick={() => {
+                                setOpenSlot(slot);
+                                setPending(null);
+                              }}
+                            >
+                              {booking.clientName}
                             </div>
                           ) : (
                             <div className={slotClass} style={{ justifyContent: 'center', opacity: slot.available ? 1 : 0.4,}}>
@@ -311,7 +270,7 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
                   className={i === activeDateIndex ? 'blocs-day-tab active' : 'blocs-day-tab'}
                   onClick={() => {
                     setActiveDateIndex(i);
-                    setExpandedBookingId(null);
+                    setOpenSlot(null);
                     setPending(null);
                   }}
                 >
@@ -328,9 +287,6 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
 
                 const booking = slot.booking;
                 const blocked = slot.blocked;
-                const isExpanded = !!booking && expandedBookingId === booking.id;
-                const isPending = !!booking && pending?.bookingId === booking.id;
-                const isBusy = !!booking && busyBookingId === booking.id;
 
                 let slotClass = slot.available
                   ? 'blocs-slot blocs-slot--open'
@@ -348,68 +304,20 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
                 }
 
                 return (
-                  <div key={time} className="flex flex-col gap-1.5">
-                    <div
-                      className="blocs-slot-row"
-                      onClick={() => {
-                        if (!booking) return;
-                        setExpandedBookingId(isExpanded ? null : booking.id);
-                        setPending(null);
-                      }}
-                      style={{ cursor: booking ? 'pointer' : 'default' }}
-                    >
-                      <span className="blocs-slot-time">{time}</span>
-                      <div className={slotClass}>
-                        <span>{label}</span>
-                        {booking && <span style={{ opacity: 0.5, fontSize: '11px' }}>▾</span>}
-                      </div>
+                  <div
+                    key={time}
+                    className="blocs-slot-row"
+                    onClick={() => {
+                      if (!booking) return;
+                      setOpenSlot(slot);
+                      setPending(null);
+                    }}
+                    style={{ cursor: booking ? 'pointer' : 'default' }}
+                  >
+                    <span className="blocs-slot-time">{time}</span>
+                    <div className={slotClass}>
+                      <span>{label}</span>
                     </div>
-
-                    {isExpanded && booking && (
-                      <div className="blocs-slot-actions">
-                        {isPending ? (
-                          <>
-                            <span style={{ color: 'var(--blocs-text-60)', fontSize: '12px', width: '100%' }}>
-                              Cancel {pending!.kind === 'series' ? 'whole series' : 'this session'}?
-                            </span>
-                            <button
-                              className="blocs-slot-action-danger"
-                              disabled={isBusy}
-                              onClick={() =>
-                                pending!.kind === 'series' && booking.seriesId
-                                  ? cancelSeries(booking.seriesId, booking.id)
-                                  : cancelSingle(booking.id)
-                              }
-                            >
-                              {isBusy ? '...' : 'Yes, cancel'}
-                            </button>
-                            <button className="blocs-slot-action-neutral" disabled={isBusy} onClick={() => setPending(null)}>
-                              No, keep it
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              className="blocs-slot-action-danger"
-                              onClick={() => setPending({ bookingId: booking.id, kind: 'single' })}
-                            >
-                              Cancel session
-                            </button>
-                            {booking.seriesId && (
-                              <button
-                                className="blocs-slot-action-danger"
-                                onClick={() => setPending({ bookingId: booking.id, kind: 'series' })}
-                              >
-                                Cancel series
-                              </button>
-                            )}
-                            <button className="blocs-slot-action-neutral" onClick={() => setExpandedBookingId(null)}>
-                              Keep
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -424,6 +332,108 @@ export default function TrainerDashboardView({ trainer, slots, welcome }: Props)
         themeColor={trainer.theme_color} themeSurface={trainer.theme_surface} />
       ) : (
         <div>No screen shown</div>
+      )}
+
+      {openSlot?.booking && (
+        <div
+          className="blocs-modal-overlay"
+          onClick={() => {
+            setOpenSlot(null);
+            setPending(null);
+          }}
+        >
+          <div
+            className="blocs-confirm-panel blocs-modal-panel w-full flex flex-col gap-3"
+            style={{ maxWidth: '420px', position: 'relative' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setOpenSlot(null);
+                setPending(null);
+              }}
+              aria-label="Close"
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--blocs-text-50)',
+                fontSize: '22px',
+                lineHeight: 1,
+                cursor: 'pointer',
+                padding: '4px',
+              }}
+            >
+              ×
+            </button>
+
+            <span className="blocs-confirm-panel-title">Session details</span>
+
+            <div className="blocs-summary-card">
+              <div className="blocs-summary-row">
+                <span className="blocs-summary-key">Client</span>
+                <span className="blocs-summary-value">{openSlot.booking.clientName}</span>
+              </div>
+              <div className="blocs-summary-row">
+                <span className="blocs-summary-key">Date</span>
+                <span className="blocs-summary-value">{format(new Date(openSlot.start), 'EEE, MMM d')}</span>
+              </div>
+              <div className="blocs-summary-row">
+                <span className="blocs-summary-key">Time</span>
+                <span className="blocs-summary-value">
+                  {format(new Date(openSlot.start), 'HH:mm')}–{format(new Date(openSlot.end), 'HH:mm')}
+                </span>
+              </div>
+            </div>
+
+            {pending?.bookingId === openSlot.booking.id ? (
+              <>
+                <span style={{ color: 'var(--blocs-text-60)', fontSize: '13px' }}>
+                  Cancel {pending.kind === 'series' ? 'the whole series' : 'this session'}?
+                </span>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    className="blocs-slot-action-danger"
+                    disabled={busyBookingId === openSlot.booking.id}
+                    onClick={() =>
+                      pending.kind === 'series' && openSlot.booking!.seriesId
+                        ? cancelSeries(openSlot.booking!.seriesId, openSlot.booking!.id)
+                        : cancelSingle(openSlot.booking!.id)
+                    }
+                  >
+                    {busyBookingId === openSlot.booking.id ? '...' : 'Yes, cancel'}
+                  </button>
+                  <button
+                    className="blocs-slot-action-neutral"
+                    disabled={busyBookingId === openSlot.booking.id}
+                    onClick={() => setPending(null)}
+                  >
+                    No, keep it
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  className="blocs-slot-action-danger"
+                  onClick={() => setPending({ bookingId: openSlot.booking!.id, kind: 'single' })}
+                >
+                  Cancel session
+                </button>
+                {openSlot.booking.seriesId && (
+                  <button
+                    className="blocs-slot-action-danger"
+                    onClick={() => setPending({ bookingId: openSlot.booking!.id, kind: 'series' })}
+                  >
+                    Cancel series
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
