@@ -4,10 +4,8 @@ import "./globals.css";
 import type { Viewport } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import {
-  DEFAULT_THEME_COLOR,
   DEFAULT_THEME_SURFACE,
-  THEME_PALETTES,
-  isThemeColorKey,
+  getSurfaceBg,
   isThemeSurface,
 } from '@/lib/theme'
 
@@ -38,22 +36,19 @@ export async function generateViewport(): Promise<Viewport> {
   const { data: { user } } = await supabase.auth.getUser()
   // Not logged in → Blocs defaults
   if (!user) {
-    return { themeColor: THEME_PALETTES.dark.blue.base }
+    return { themeColor: getSurfaceBg(DEFAULT_THEME_SURFACE) }
   }
   const { data: trainer } = await supabase
     .from('trainers')
-    .select('theme_color, theme_surface')
+    .select('theme_surface')
     .eq('auth_user_id', user.id)
     .single()
   const surface = isThemeSurface(trainer?.theme_surface)
     ? trainer.theme_surface
     : DEFAULT_THEME_SURFACE
-  const color = isThemeColorKey(trainer?.theme_color)
-    ? trainer.theme_color
-    : DEFAULT_THEME_COLOR
-  // Status bar / browser chrome → accent
+  // Status bar / browser chrome → page background, not the accent color
   return {
-    themeColor: THEME_PALETTES[surface][color].base,
+    themeColor: getSurfaceBg(surface),
   }
 }
 

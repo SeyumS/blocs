@@ -90,6 +90,15 @@ const SURFACE_TOKENS: Record<ThemeSurface, SurfaceTokens> = {
   },
 };
 
+// Background color for a surface — used as the browser/PWA chrome color
+// (theme-color meta / status bar), which should match the page background
+// rather than the accent so it doesn't clash with whatever hue the trainer
+// picked.
+export function getSurfaceBg(surfaceKey?: string | null): string {
+  const surface = isThemeSurface(surfaceKey) ? surfaceKey : DEFAULT_THEME_SURFACE;
+  return SURFACE_TOKENS[surface].bg;
+}
+
 export function isThemeColorKey(value: string | null | undefined): value is ThemeColorKey {
   return !!value && (THEME_COLOR_KEYS as string[]).includes(value);
 }
